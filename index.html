@@ -60,14 +60,17 @@
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 4px #000;
+            font-size: 14px;
         }
         .btn:active { box-shadow: 0 1px #000; transform: translateY(3px); }
 
-        #brush-btn {
+        /* Top Left Buttons */
+        #top-left-menu {
             position: absolute;
             top: 10px;
             left: 10px;
-            background: #e0f7fa;
+            display: flex;
+            gap: 10px;
         }
 
         /* MOBILE CONTROLS */
@@ -126,6 +129,8 @@
             padding: 20px;
             width: 80%;
             max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
             text-align: center;
             display: none;
             pointer-events: auto;
@@ -135,15 +140,23 @@
         
         .modal h2 { margin-top: 0; color: #333; }
         
-        .shop-item {
+        /* Lists for Shop and Inventory */
+        .list-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: #eee;
-            margin: 5px 0;
+            margin: 8px 0;
             padding: 10px;
             border-radius: 8px;
+            border: 2px solid transparent;
         }
+        .list-item.active {
+            border: 2px solid #27ae60;
+            background: #d5f5e3;
+        }
+
+        .emoji-icon { font-size: 24px; margin-right: 10px; }
 
         #timer-display { font-size: 40px; color: #e74c3c; font-weight: bold; }
         #timer-instruction { font-size: 18px; color: #555; margin-bottom: 20px; min-height: 50px;}
@@ -169,7 +182,10 @@
             <img src="images/coin.png" style="width:24px;"> <span id="coin-count">0</span>
         </div>
         
-        <button id="brush-btn" class="btn">🦷 Brush Teeth Mode</button>
+        <div id="top-left-menu">
+            <button id="brush-btn" class="btn">🦷 Brush Mode</button>
+            <button id="inventory-btn" class="btn" onclick="openInventory()">🎒 Bag</button>
+        </div>
 
         <div id="controls">
             <div id="btn-up" class="d-btn"></div>
@@ -191,8 +207,19 @@
 
     <div id="shop-modal" class="modal">
         <h2>🏪 Dental Shop</h2>
+        <p>Spend your coins on special effects!</p>
         <div id="shop-items"></div>
+        <br>
         <button class="btn" onclick="closeModal('shop-modal')">Close</button>
+    </div>
+
+    <!-- NEW: Inventory Modal -->
+    <div id="inventory-modal" class="modal">
+        <h2>🎒 My Backpack</h2>
+        <p>Equip items to see their effects!</p>
+        <div id="inventory-items"></div>
+        <br>
+        <button class="btn" onclick="closeModal('inventory-modal')">Close</button>
     </div>
 
     <div id="interact-modal" class="modal">
@@ -218,7 +245,7 @@
     </div>
 
     <script>
-        // --- ASSET MANAGEMENT (Updated paths for 'images/' folder) ---
+        // --- ASSET MANAGEMENT ---
         const images = {};
         const imageSources = {
             ground: 'images/ground_tile.png',
@@ -265,16 +292,16 @@
         let width, height;
         let keys = {};
         
-        // Data Persistence (Updated with Quiz History)
+        // Data Persistence
         let userData = {
             coins: parseInt(localStorage.getItem('dental_coins')) || 0,
             lastLogin: localStorage.getItem('dental_last_login') || null,
             inventory: JSON.parse(localStorage.getItem('dental_inventory')) || [],
-            // New: Track quiz date and answered questions
+            activeItems: JSON.parse(localStorage.getItem('dental_active')) || [], // New: Tracks equipped items
             quizHistory: JSON.parse(localStorage.getItem('dental_quiz_history')) || { date: null, answered: [] }
         };
 
-        const player = { x: 300, y: 300, w: 40, h: 40, speed: 4, frame: 0, dir: 1, isMoving: false };
+        const player = { x: 300, y: 300, w: 40, h: 40, baseSpeed: 4, speed: 4, frame: 0, dir: 1, isMoving: false };
         const pet = { x: 340, y: 300, w: 32, h: 32, frame: 0 };
         const shopDoor = { x: 0, y: 50, w: 60, h: 60 };
         const grasses = [];
@@ -312,6 +339,7 @@
             localStorage.setItem('dental_coins', userData.coins);
             localStorage.setItem('dental_last_login', userData.lastLogin);
             localStorage.setItem('dental_inventory', JSON.stringify(userData.inventory));
+            localStorage.setItem('dental_active', JSON.stringify(userData.activeItems));
             localStorage.setItem('dental_quiz_history', JSON.stringify(userData.quizHistory));
         }
 
@@ -358,6 +386,16 @@
         }
 
         function update() {
+            // APPLY EFFECTS FROM INVENTORY
+            // 1. Speed Boots
+            if (userData.activeItems.includes('speed_boots')) player.speed = 8;
+            else player.speed = player.baseSpeed;
+
+            // 2. Growth Potion (Pet Size)
+            if (userData.activeItems.includes('big_pet')) { pet.w = 64; pet.h = 64; }
+            else { pet.w = 32; pet.h = 32; }
+
+            // Movement Logic
             player.isMoving = false;
             let dx = 0; let dy = 0;
 
@@ -376,7 +414,8 @@
                 if(player.x > width - 60) player.x = width - 60;
                 if(player.y > height - 60) player.y = height - 60;
 
-                if (userData.inventory.includes('sparkle')) {
+                // 3. Sparkle Effect
+                if (userData.activeItems.includes('sparkle')) {
                     if (Math.random() > 0.5) {
                         particles.push({
                             x: player.x + player.w/2,
@@ -428,7 +467,12 @@
             ctx.save();
             ctx.translate(player.x + player.w/2, player.y + player.h/2);
             ctx.scale(player.dir, 1); 
+            
+            // 4. Ghost Effect (Opacity)
+            if (userData.activeItems.includes('ghost')) ctx.globalAlpha = 0.5;
+
             ctx.drawImage(pImg, -player.w/2, -player.h/2, player.w, player.h);
+            ctx.globalAlpha = 1.0; // Reset opacity
             ctx.restore();
 
             let petImg = (pet.frame === 0) ? images.pet_fly1 : images.pet_fly2;
@@ -476,25 +520,31 @@
             document.getElementById('coin-count').innerText = userData.coins;
         }
 
+        // --- SHOP & INVENTORY SYSTEM ---
+
+        // Define all available items
+        const allItems = [
+            { id: 'sparkle', name: 'Sparkle Trail', cost: 100, emoji: '✨' },
+            { id: 'big_pet', name: 'Growth Potion', cost: 250, emoji: '🧪' },
+            { id: 'speed_boots', name: 'Speed Boots', cost: 300, emoji: '👟' },
+            { id: 'ghost', name: 'Ghost Spirit', cost: 500, emoji: '👻' }
+        ];
+
         function openShop() {
             const list = document.getElementById('shop-items');
             list.innerHTML = '';
             
-            const items = [
-                { id: 'sparkle', name: 'Sparkle Trail', cost: 100, icon: 'images/water.png' },
-                { id: 'hat', name: 'Cool Hat (Cosmetic)', cost: 500, icon: 'images/coin.png' }
-            ];
-
-            items.forEach(item => {
+            allItems.forEach(item => {
                 const div = document.createElement('div');
-                div.className = 'shop-item';
+                div.className = 'list-item';
                 const hasIt = userData.inventory.includes(item.id);
+                
                 div.innerHTML = `
-                    <div style="display:flex;align-items:center;gap:10px;">
-                        <img src="${item.icon}" width="20">
+                    <div style="display:flex;align-items:center;">
+                        <span class="emoji-icon">${item.emoji}</span>
                         <b>${item.name}</b>
                     </div>
-                    ${hasIt ? '<span>Owned</span>' : `<button class="btn" onclick="buyItem('${item.id}', ${item.cost})">${item.cost}</button>`}
+                    ${hasIt ? '<span style="color:green">Owned</span>' : `<button class="btn" onclick="buyItem('${item.id}', ${item.cost})">${item.cost} G</button>`}
                 `;
                 list.appendChild(div);
             });
@@ -513,7 +563,48 @@
             }
         };
 
-        // --- EXTENDED QUIZ LOGIC ---
+        window.openInventory = function() {
+            const list = document.getElementById('inventory-items');
+            list.innerHTML = '';
+
+            if (userData.inventory.length === 0) {
+                list.innerHTML = "<p>Your bag is empty. Visit the shop!</p>";
+            } else {
+                userData.inventory.forEach(itemId => {
+                    const itemDef = allItems.find(i => i.id === itemId);
+                    if (!itemDef) return;
+
+                    const isEquipped = userData.activeItems.includes(itemId);
+                    const div = document.createElement('div');
+                    div.className = 'list-item' + (isEquipped ? ' active' : '');
+                    
+                    div.innerHTML = `
+                        <div style="display:flex;align-items:center;">
+                            <span class="emoji-icon">${itemDef.emoji}</span>
+                            <b>${itemDef.name}</b>
+                        </div>
+                        <button class="btn" onclick="toggleItem('${itemId}')">
+                            ${isEquipped ? 'Unequip' : 'Equip'}
+                        </button>
+                    `;
+                    list.appendChild(div);
+                });
+            }
+            document.getElementById('inventory-modal').style.display = 'block';
+        };
+
+        window.toggleItem = function(id) {
+            const idx = userData.activeItems.indexOf(id);
+            if (idx > -1) {
+                userData.activeItems.splice(idx, 1); // Unequip
+            } else {
+                userData.activeItems.push(id); // Equip
+            }
+            saveData();
+            openInventory(); // Refresh UI
+        };
+
+        // --- QUIZ & TIMER LOGIC (Existing) ---
         const quizQuestions = [
             { q: "How long should you brush?", a: ["30 seconds", "2 minutes", "5 minutes"], correct: 1 },
             { q: "How often should you floss?", a: ["Once a week", "Every day", "Never"], correct: 1 },
@@ -532,20 +623,17 @@
         window.startQuiz = function() {
             closeModal('interact-modal');
 
-            // 1. Reset Counter if New Day
             const today = new Date().toDateString();
             if (userData.quizHistory.date !== today) {
                 userData.quizHistory = { date: today, answered: [] };
                 saveData();
             }
 
-            // 2. Check Daily Limit (3)
             if (userData.quizHistory.answered.length >= 3) {
                 alert("🧠 You've completed your 3 daily quizzes!\nCome back tomorrow for more.");
                 return;
             }
 
-            // 3. Find Unanswered Questions for Today
             const availableIndices = quizQuestions.map((_, i) => i).filter(i => !userData.quizHistory.answered.includes(i));
 
             if (availableIndices.length === 0) {
@@ -553,16 +641,13 @@
                 return;
             }
 
-            // 4. Pick Random Question
             const randIndex = Math.floor(Math.random() * availableIndices.length);
             const questionIndex = availableIndices[randIndex];
             const q = quizQuestions[questionIndex];
 
-            // 5. Show GUI
             const modal = document.getElementById('quiz-modal');
             modal.style.display = 'block';
             
-            // Show Count (e.g., 1/3)
             const count = userData.quizHistory.answered.length + 1;
             document.getElementById('quiz-header').innerText = `Daily Question ${count}/3`;
             document.getElementById('quiz-question').innerText = q.q;
@@ -575,7 +660,6 @@
                 btn.className = 'quiz-option';
                 btn.innerText = ans;
                 btn.onclick = () => {
-                    // Mark this specific question as answered today so it doesn't repeat
                     userData.quizHistory.answered.push(questionIndex);
                     
                     if (idx === q.correct) {
@@ -593,7 +677,6 @@
             });
         };
 
-        // BRUSHING TIMER
         let brushInterval;
         document.getElementById('brush-btn').addEventListener('click', () => {
             document.getElementById('timer-modal').style.display = 'block';
