@@ -14,14 +14,14 @@
             overflow: hidden;
             background-color: #333;
             font-family: 'Arial', sans-serif;
-            touch-action: none; /* Prevent browser zooming/scrolling */
+            touch-action: none;
             user-select: none;
             -webkit-user-select: none;
         }
 
         canvas {
             display: block;
-            image-rendering: pixelated; /* Keeps pixel art crisp */
+            image-rendering: pixelated;
             width: 100%;
             height: 100%;
         }
@@ -114,7 +114,7 @@
         }
         #action-btn:active { background: rgba(255, 200, 0, 0.8); }
 
-        /* MODALS (Shop, Quiz, Timer) */
+        /* MODALS */
         .modal {
             position: absolute;
             top: 50%;
@@ -127,7 +127,7 @@
             width: 80%;
             max-width: 400px;
             text-align: center;
-            display: none; /* Hidden by default */
+            display: none;
             pointer-events: auto;
             box-shadow: 0 10px 50px rgba(0,0,0,0.5);
             z-index: 100;
@@ -135,7 +135,6 @@
         
         .modal h2 { margin-top: 0; color: #333; }
         
-        /* Shop Specific */
         .shop-item {
             display: flex;
             justify-content: space-between;
@@ -146,11 +145,9 @@
             border-radius: 8px;
         }
 
-        /* Timer Specific */
         #timer-display { font-size: 40px; color: #e74c3c; font-weight: bold; }
         #timer-instruction { font-size: 18px; color: #555; margin-bottom: 20px; min-height: 50px;}
 
-        /* Quiz Specific */
         .quiz-option {
             display: block;
             width: 100%;
@@ -169,12 +166,11 @@
 
     <div id="ui-layer">
         <div class="coin-display">
-            <img src="coin.png" style="width:24px;"> <span id="coin-count">0</span>
+            <img src="images/coin.png" style="width:24px;"> <span id="coin-count">0</span>
         </div>
         
         <button id="brush-btn" class="btn">🦷 Brush Teeth Mode</button>
 
-        <!-- D-PAD for Mobile -->
         <div id="controls">
             <div id="btn-up" class="d-btn"></div>
             <div id="btn-left" class="d-btn"></div>
@@ -186,7 +182,6 @@
 
     <!-- MODALS -->
 
-    <!-- Login Reward -->
     <div id="login-modal" class="modal">
         <h2>📅 Daily Login!</h2>
         <p>Welcome back! Here is your daily reward.</p>
@@ -194,16 +189,12 @@
         <button class="btn" onclick="closeModal('login-modal')">Awesome!</button>
     </div>
 
-    <!-- Shop -->
     <div id="shop-modal" class="modal">
         <h2>🏪 Dental Shop</h2>
-        <div id="shop-items">
-            <!-- Dynamically filled -->
-        </div>
+        <div id="shop-items"></div>
         <button class="btn" onclick="closeModal('shop-modal')">Close</button>
     </div>
 
-    <!-- Interaction / Quiz -->
     <div id="interact-modal" class="modal">
         <h2>🤖 Pet Interaction</h2>
         <p>What would you like to do?</p>
@@ -213,11 +204,11 @@
     </div>
 
     <div id="quiz-modal" class="modal">
-        <h2 id="quiz-question">Question?</h2>
+        <h2 id="quiz-header">Quiz Time</h2>
+        <p id="quiz-question" style="font-size:18px; font-weight:bold;">Question?</p>
         <div id="quiz-options"></div>
     </div>
 
-    <!-- Brushing Timer -->
     <div id="timer-modal" class="modal">
         <h2>🦷 Brushing Time</h2>
         <div id="timer-display">02:00</div>
@@ -227,26 +218,26 @@
     </div>
 
     <script>
-        // --- ASSET MANAGEMENT ---
+        // --- ASSET MANAGEMENT (Updated paths for 'images/' folder) ---
         const images = {};
         const imageSources = {
-                    ground: 'images/ground_tile.png',
-                    fence: 'images/fence.png',
-                    torch: 'images/torch.png',
-                    grass1: 'images/grass_1.png',
-                    grass2: 'images/grass_2.png',
-                    grass3: 'images/grass_3.png',
-                    shop: 'images/shop_door.png',
-                    player_idle: 'images/char_idle.png',
-                    player_walk1: 'images/char_walk1.png',
-                    player_walk2: 'images/char_walk2.png',
-                    player_jump: 'images/char_jump.png',
-                    pet_idle: 'images/pet_idle.png',
-                    pet_fly1: 'images/pet_fly1.png',
-                    pet_fly2: 'images/pet_fly2.png',
-                    coin: 'images/coin.png',
-                    water: 'images/water.png'
-                };
+            ground: 'images/ground_tile.png',
+            fence: 'images/fence.png',
+            torch: 'images/torch.png',
+            grass1: 'images/grass_1.png',
+            grass2: 'images/grass_2.png',
+            grass3: 'images/grass_3.png',
+            shop: 'images/shop_door.png',
+            player_idle: 'images/char_idle.png',
+            player_walk1: 'images/char_walk1.png',
+            player_walk2: 'images/char_walk2.png',
+            player_jump: 'images/char_jump.png',
+            pet_idle: 'images/pet_idle.png',
+            pet_fly1: 'images/pet_fly1.png',
+            pet_fly2: 'images/pet_fly2.png',
+            coin: 'images/coin.png',
+            water: 'images/water.png'
+        };
 
         let assetsLoaded = 0;
         const totalAssets = Object.keys(imageSources).length;
@@ -259,7 +250,6 @@
                     assetsLoaded++;
                     if (assetsLoaded === totalAssets) startGame();
                 };
-                // Handle missing images gracefully
                 images[key].onerror = () => {
                     console.warn("Missing image: " + imageSources[key]);
                     assetsLoaded++;
@@ -275,27 +265,25 @@
         let width, height;
         let keys = {};
         
-        // Data Persistence
+        // Data Persistence (Updated with Quiz History)
         let userData = {
             coins: parseInt(localStorage.getItem('dental_coins')) || 0,
             lastLogin: localStorage.getItem('dental_last_login') || null,
-            inventory: JSON.parse(localStorage.getItem('dental_inventory')) || []
+            inventory: JSON.parse(localStorage.getItem('dental_inventory')) || [],
+            // New: Track quiz date and answered questions
+            quizHistory: JSON.parse(localStorage.getItem('dental_quiz_history')) || { date: null, answered: [] }
         };
 
-        // Entities
-        const player = { x: 300, y: 300, w: 40, h: 40, speed: 4, frame: 0, dir: 1, isMoving: false, jumping: false, jumpY: 0 };
-        const pet = { x: 340, y: 300, w: 32, h: 32, frame: 0, targetX: 340, targetY: 300 };
-        const shopDoor = { x: 0, y: 50, w: 60, h: 60 }; // Position updated in resize
+        const player = { x: 300, y: 300, w: 40, h: 40, speed: 4, frame: 0, dir: 1, isMoving: false };
+        const pet = { x: 340, y: 300, w: 32, h: 32, frame: 0 };
+        const shopDoor = { x: 0, y: 50, w: 60, h: 60 };
         const grasses = [];
-
-        // Special Effect Particles
         let particles = [];
 
-        // --- INITIALIZATION ---
         function resize() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-            shopDoor.x = width / 2 - 30; // Center the shop
+            shopDoor.x = width / 2 - 30; 
             shopDoor.y = 50; 
         }
 
@@ -304,7 +292,7 @@
                 grasses.push({
                     x: Math.random() * width,
                     y: Math.random() * height,
-                    type: Math.floor(Math.random() * 3) + 1 // 1, 2, or 3
+                    type: Math.floor(Math.random() * 3) + 1 
                 });
             }
         }
@@ -324,6 +312,7 @@
             localStorage.setItem('dental_coins', userData.coins);
             localStorage.setItem('dental_last_login', userData.lastLogin);
             localStorage.setItem('dental_inventory', JSON.stringify(userData.inventory));
+            localStorage.setItem('dental_quiz_history', JSON.stringify(userData.quizHistory));
         }
 
         function startGame() {
@@ -332,18 +321,14 @@
             initGrass();
             checkDailyLogin();
             updateUI();
-            
-            // Start Loop
             requestAnimationFrame(gameLoop);
         }
 
-        loadImages(); // Kicks everything off
+        loadImages(); 
 
-        // --- INPUT HANDLING ---
         window.addEventListener('keydown', e => keys[e.key] = true);
         window.addEventListener('keyup', e => keys[e.key] = false);
 
-        // Mobile Touch Controls
         const btnUp = document.getElementById('btn-up');
         const btnDown = document.getElementById('btn-down');
         const btnLeft = document.getElementById('btn-left');
@@ -360,32 +345,19 @@
         addTouch(btnLeft, 'ArrowLeft');
         addTouch(btnRight, 'ArrowRight');
 
-        // Interact Button Logic
-        btnAct.addEventListener('touchstart', (e) => { 
-            e.preventDefault(); 
-            interact();
-        });
-        btnAct.addEventListener('click', (e) => {
-             interact();
-        });
-        // Spacebar for desktop interaction
-        window.addEventListener('keydown', (e) => {
-            if(e.code === 'Space') interact();
-        });
+        btnAct.addEventListener('touchstart', (e) => { e.preventDefault(); interact(); });
+        btnAct.addEventListener('click', (e) => { interact(); });
+        window.addEventListener('keydown', (e) => { if(e.code === 'Space') interact(); });
 
         function interact() {
-            // 1. Check Shop Collision
             if (checkCollision(player, shopDoor)) {
                 openShop();
                 return;
             }
-            // 2. Pet Interaction (Always available via button for simplicity)
             document.getElementById('interact-modal').style.display = 'block';
         }
 
-        // --- GAME LOGIC ---
         function update() {
-            // Player Movement
             player.isMoving = false;
             let dx = 0; let dy = 0;
 
@@ -399,13 +371,11 @@
                 player.y += dy;
                 player.isMoving = true;
                 
-                // Boundaries (Fence)
                 if(player.x < 40) player.x = 40;
                 if(player.y < 40) player.y = 40;
                 if(player.x > width - 60) player.x = width - 60;
                 if(player.y > height - 60) player.y = height - 60;
 
-                // Particle Effect (If purchased)
                 if (userData.inventory.includes('sparkle')) {
                     if (Math.random() > 0.5) {
                         particles.push({
@@ -417,23 +387,20 @@
                 }
             }
 
-            // Animation Frames
             const time = Date.now();
             if (player.isMoving) {
-                player.frame = Math.floor(time / 200) % 2; // Flip between walk1 and walk2
+                player.frame = Math.floor(time / 200) % 2; 
             } else {
                 player.frame = 0;
             }
 
-            // Pet Logic (Follow Player)
             let dist = Math.hypot(player.x - pet.x, player.y - pet.y);
             if (dist > 60) {
                 pet.x += (player.x - pet.x) * 0.05;
                 pet.y += (player.y - pet.y) * 0.05;
             }
-            pet.frame = Math.floor(time / 300) % 2; // Fly animation
+            pet.frame = Math.floor(time / 300) % 2; 
 
-            // Particle Logic
             particles.forEach((p, i) => {
                 p.life--;
                 p.y -= 1;
@@ -442,39 +409,31 @@
         }
 
         function draw() {
-            // 1. Background (Tiling)
             const pat = ctx.createPattern(images.ground, "repeat");
             ctx.fillStyle = pat;
             ctx.fillRect(0, 0, width, height);
 
-            // 2. Fence & Torches
             drawFence();
-
-            // 3. Shop Door
             ctx.drawImage(images.shop, shopDoor.x, shopDoor.y, shopDoor.w, shopDoor.h);
             
-            // 4. Grass
             grasses.forEach(g => {
                 let img = images['grass' + g.type];
                 ctx.drawImage(img, g.x, g.y, 32, 32);
             });
 
-            // 5. Player
             let pImg;
             if (!player.isMoving) pImg = images.player_idle;
             else pImg = (player.frame === 0) ? images.player_walk1 : images.player_walk2;
             
             ctx.save();
             ctx.translate(player.x + player.w/2, player.y + player.h/2);
-            ctx.scale(player.dir, 1); // Flip sprite based on direction
+            ctx.scale(player.dir, 1); 
             ctx.drawImage(pImg, -player.w/2, -player.h/2, player.w, player.h);
             ctx.restore();
 
-            // 6. Pet
             let petImg = (pet.frame === 0) ? images.pet_fly1 : images.pet_fly2;
-            ctx.drawImage(petImg, pet.x, pet.y - 10 * Math.sin(Date.now()/500), pet.w, pet.h); // Floating effect
+            ctx.drawImage(petImg, pet.x, pet.y - 10 * Math.sin(Date.now()/500), pet.w, pet.h);
 
-            // 7. Particles
             particles.forEach(p => {
                 ctx.globalAlpha = p.life / 20;
                 ctx.drawImage(images.water, p.x, p.y, 16, 16);
@@ -487,16 +446,13 @@
             const cols = Math.ceil(width / tileSize);
             const rows = Math.ceil(height / tileSize);
             
-            // Top & Bottom
             for(let i=0; i<cols; i++) {
                 ctx.drawImage(images.fence, i*tileSize, 0, tileSize, tileSize);
                 ctx.drawImage(images.fence, i*tileSize, height-tileSize, tileSize, tileSize);
-                // Torches every 5 tiles
                 if(i % 5 === 0) {
                     ctx.drawImage(images.torch, i*tileSize, -10, 30, 50);
                 }
             }
-            // Left & Right
             for(let i=0; i<rows; i++) {
                 ctx.drawImage(images.fence, 0, i*tileSize, tileSize, tileSize);
                 ctx.drawImage(images.fence, width-tileSize, i*tileSize, tileSize, tileSize);
@@ -516,20 +472,17 @@
                     rect1.y + rect1.h > rect2.y);
         }
 
-        // --- UI & SYSTEM LOGIC ---
-
         function updateUI() {
             document.getElementById('coin-count').innerText = userData.coins;
         }
 
-        // SHOP
         function openShop() {
             const list = document.getElementById('shop-items');
             list.innerHTML = '';
             
             const items = [
-                { id: 'sparkle', name: 'Sparkle Trail', cost: 100, icon: 'water.png' },
-                { id: 'hat', name: 'Cool Hat (Cosmetic)', cost: 500, icon: 'coin.png' }
+                { id: 'sparkle', name: 'Sparkle Trail', cost: 100, icon: 'images/water.png' },
+                { id: 'hat', name: 'Cool Hat (Cosmetic)', cost: 500, icon: 'images/coin.png' }
             ];
 
             items.forEach(item => {
@@ -554,41 +507,86 @@
                 userData.inventory.push(id);
                 saveData();
                 updateUI();
-                openShop(); // Refresh UI
+                openShop(); 
             } else {
                 alert("Not enough coins!");
             }
         };
 
-        // QUIZ
+        // --- EXTENDED QUIZ LOGIC ---
         const quizQuestions = [
             { q: "How long should you brush?", a: ["30 seconds", "2 minutes", "5 minutes"], correct: 1 },
             { q: "How often should you floss?", a: ["Once a week", "Every day", "Never"], correct: 1 },
-            { q: "What helps strengthen teeth?", a: ["Sugar", "Fluoride", "Lemon Juice"], correct: 1 }
+            { q: "What helps strengthen teeth?", a: ["Sugar", "Fluoride", "Lemon Juice"], correct: 1 },
+            { q: "When is the best time to brush?", a: ["After breakfast & before bed", "Only morning", "Once a week"], correct: 0 },
+            { q: "What is a cavity?", a: ["A type of candy", "A hole in the tooth", "A toothbrush brand"], correct: 1 },
+            { q: "How often should you change your toothbrush?", a: ["Every 3-4 months", "Every year", "When it breaks"], correct: 0 },
+            { q: "What food is bad for teeth?", a: ["Cheese", "Sticky Candy", "Milk"], correct: 1 },
+            { q: "What does a dentist do?", a: ["Fixes cars", "Checks teeth health", "Sells toys"], correct: 1 },
+            { q: "Why do we floss?", a: ["To clean between teeth", "To make teeth blue", "It tastes good"], correct: 0 },
+            { q: "What is plaque?", a: ["A sticky film of bacteria", "A gold medal", "Toothpaste"], correct: 0 },
+            { q: "Which drink is best for teeth?", a: ["Soda", "Water", "Energy drinks"], correct: 1 },
+            { q: "How many times a day should you brush?", a: ["1", "2", "5"], correct: 1 }
         ];
 
         window.startQuiz = function() {
             closeModal('interact-modal');
-            const q = quizQuestions[Math.floor(Math.random() * quizQuestions.length)];
+
+            // 1. Reset Counter if New Day
+            const today = new Date().toDateString();
+            if (userData.quizHistory.date !== today) {
+                userData.quizHistory = { date: today, answered: [] };
+                saveData();
+            }
+
+            // 2. Check Daily Limit (3)
+            if (userData.quizHistory.answered.length >= 3) {
+                alert("🧠 You've completed your 3 daily quizzes!\nCome back tomorrow for more.");
+                return;
+            }
+
+            // 3. Find Unanswered Questions for Today
+            const availableIndices = quizQuestions.map((_, i) => i).filter(i => !userData.quizHistory.answered.includes(i));
+
+            if (availableIndices.length === 0) {
+                alert("You've answered all available questions!");
+                return;
+            }
+
+            // 4. Pick Random Question
+            const randIndex = Math.floor(Math.random() * availableIndices.length);
+            const questionIndex = availableIndices[randIndex];
+            const q = quizQuestions[questionIndex];
+
+            // 5. Show GUI
             const modal = document.getElementById('quiz-modal');
             modal.style.display = 'block';
+            
+            // Show Count (e.g., 1/3)
+            const count = userData.quizHistory.answered.length + 1;
+            document.getElementById('quiz-header').innerText = `Daily Question ${count}/3`;
             document.getElementById('quiz-question').innerText = q.q;
             
             const opts = document.getElementById('quiz-options');
             opts.innerHTML = '';
+            
             q.a.forEach((ans, idx) => {
                 const btn = document.createElement('button');
                 btn.className = 'quiz-option';
                 btn.innerText = ans;
                 btn.onclick = () => {
+                    // Mark this specific question as answered today so it doesn't repeat
+                    userData.quizHistory.answered.push(questionIndex);
+                    
                     if (idx === q.correct) {
-                        alert("Correct! +20 Coins");
+                        alert("✅ Correct! +20 Coins");
                         userData.coins += 20;
-                        saveData();
-                        updateUI();
                     } else {
-                        alert("Oops, try again next time!");
+                        alert("❌ Oops! That wasn't right.");
                     }
+                    
+                    saveData();
+                    updateUI();
                     closeModal('quiz-modal');
                 };
                 opts.appendChild(btn);
@@ -603,19 +601,16 @@
 
         window.startBrushing = function() {
             document.getElementById('start-timer-btn').style.display = 'none';
-            let timeLeft = 120; // 2 minutes
+            let timeLeft = 120; 
             const display = document.getElementById('timer-display');
             const instruct = document.getElementById('timer-instruction');
 
-            // Play music? (Optional)
-            
             brushInterval = setInterval(() => {
                 timeLeft--;
                 let m = Math.floor(timeLeft / 60);
                 let s = timeLeft % 60;
                 display.innerText = `0${m}:${s < 10 ? '0'+s : s}`;
 
-                // Instructions based on time
                 if (timeLeft > 90) instruct.innerText = "Brush Top Teeth (Outer Surface)";
                 else if (timeLeft > 60) instruct.innerText = "Brush Top Teeth (Inner Surface)";
                 else if (timeLeft > 30) instruct.innerText = "Brush Bottom Teeth";
