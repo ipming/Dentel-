@@ -12,7 +12,7 @@
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #333;
+            background-color: #222; /* Darker background for the void outside fence */
             font-family: 'Arial', sans-serif;
             touch-action: none;
             user-select: none;
@@ -71,6 +71,8 @@
             left: 10px;
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
+            max-width: 80%;
         }
 
         /* MOBILE CONTROLS */
@@ -127,9 +129,9 @@
             border: 5px solid #4a4a4a;
             border-radius: 15px;
             padding: 20px;
-            width: 80%;
+            width: 85%;
             max-width: 400px;
-            max-height: 80vh;
+            max-height: 85vh;
             overflow-y: auto;
             text-align: center;
             display: none;
@@ -140,7 +142,7 @@
         
         .modal h2 { margin-top: 0; color: #333; }
         
-        /* Lists for Shop and Inventory */
+        /* Lists */
         .list-item {
             display: flex;
             justify-content: space-between;
@@ -158,6 +160,26 @@
 
         .emoji-icon { font-size: 24px; margin-right: 10px; }
 
+        /* Calendar Grid */
+        #calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-top: 15px;
+        }
+        .cal-day {
+            padding: 8px 2px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        .cal-day.active {
+            background: #27ae60;
+            color: white;
+            font-weight: bold;
+            border: 1px solid #1e8449;
+        }
+
         #timer-display { font-size: 40px; color: #e74c3c; font-weight: bold; }
         #timer-instruction { font-size: 18px; color: #555; margin-bottom: 20px; min-height: 50px;}
 
@@ -165,11 +187,12 @@
             display: block;
             width: 100%;
             margin: 10px 0;
-            padding: 10px;
+            padding: 12px;
             background: #f0f0f0;
             border: 2px solid #ccc;
             border-radius: 5px;
             cursor: pointer;
+            font-size: 16px;
         }
     </style>
 </head>
@@ -185,6 +208,7 @@
         <div id="top-left-menu">
             <button id="brush-btn" class="btn">🦷 Brush Mode</button>
             <button id="inventory-btn" class="btn" onclick="openInventory()">🎒 Bag</button>
+            <button id="calendar-btn" class="btn" onclick="openCalendar()">📅 Calendar</button>
         </div>
 
         <div id="controls">
@@ -200,23 +224,31 @@
 
     <div id="login-modal" class="modal">
         <h2>📅 Daily Login!</h2>
-        <p>Welcome back! Here is your daily reward.</p>
+        <p>Welcome back! Streak recorded.</p>
         <h3 style="color:gold">+50 Coins</h3>
         <button class="btn" onclick="closeModal('login-modal')">Awesome!</button>
     </div>
 
+    <!-- Calendar Modal -->
+    <div id="calendar-modal" class="modal">
+        <h2>📅 Login History</h2>
+        <p>Green days are days you took care of your pet!</p>
+        <div id="calendar-grid"></div>
+        <br>
+        <button class="btn" onclick="closeModal('calendar-modal')">Close</button>
+    </div>
+
     <div id="shop-modal" class="modal">
         <h2>🏪 Dental Shop</h2>
-        <p>Spend your coins on special effects!</p>
+        <p>Customize your character & effects!</p>
         <div id="shop-items"></div>
         <br>
         <button class="btn" onclick="closeModal('shop-modal')">Close</button>
     </div>
 
-    <!-- NEW: Inventory Modal -->
     <div id="inventory-modal" class="modal">
         <h2>🎒 My Backpack</h2>
-        <p>Equip items to see their effects!</p>
+        <p>Toggle items On/Off</p>
         <div id="inventory-items"></div>
         <br>
         <button class="btn" onclick="closeModal('inventory-modal')">Close</button>
@@ -278,8 +310,7 @@
                     if (assetsLoaded === totalAssets) startGame();
                 };
                 images[key].onerror = () => {
-                    console.warn("Missing image: " + imageSources[key]);
-                    assetsLoaded++;
+                    assetsLoaded++; // Skip errors
                     if (assetsLoaded === totalAssets) startGame();
                 }
             }
@@ -296,8 +327,9 @@
         let userData = {
             coins: parseInt(localStorage.getItem('dental_coins')) || 0,
             lastLogin: localStorage.getItem('dental_last_login') || null,
+            loginHistory: JSON.parse(localStorage.getItem('dental_login_history')) || [],
             inventory: JSON.parse(localStorage.getItem('dental_inventory')) || [],
-            activeItems: JSON.parse(localStorage.getItem('dental_active')) || [], // New: Tracks equipped items
+            activeItems: JSON.parse(localStorage.getItem('dental_active')) || [],
             quizHistory: JSON.parse(localStorage.getItem('dental_quiz_history')) || { date: null, answered: [] }
         };
 
@@ -307,18 +339,30 @@
         const grasses = [];
         let particles = [];
 
+        // MAP SETTINGS
+        const TILE_SIZE = 40;
+        const MARGIN_TILES = 2; // 2 tiles on each side = 4 tiles total reduction
+        let mapMinX, mapMaxX, mapMinY, mapMaxY;
+
         function resize() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
+            
+            // Define playable area (smaller than screen)
+            mapMinX = MARGIN_TILES * TILE_SIZE;
+            mapMinY = MARGIN_TILES * TILE_SIZE;
+            mapMaxX = width - (MARGIN_TILES * TILE_SIZE);
+            mapMaxY = height - (MARGIN_TILES * TILE_SIZE);
+
             shopDoor.x = width / 2 - 30; 
-            shopDoor.y = 50; 
+            shopDoor.y = mapMinY - 10; // Place door on the top fence line
         }
 
         function initGrass() {
             for(let i=0; i<30; i++) {
                 grasses.push({
-                    x: Math.random() * width,
-                    y: Math.random() * height,
+                    x: mapMinX + Math.random() * (mapMaxX - mapMinX),
+                    y: mapMinY + Math.random() * (mapMaxY - mapMinY),
                     type: Math.floor(Math.random() * 3) + 1 
                 });
             }
@@ -329,6 +373,12 @@
             if (userData.lastLogin !== today) {
                 userData.coins += 50;
                 userData.lastLogin = today;
+                
+                // Add to history if not present
+                if(!userData.loginHistory.includes(today)) {
+                    userData.loginHistory.push(today);
+                }
+                
                 saveData();
                 document.getElementById('login-modal').style.display = 'block';
                 updateUI();
@@ -338,6 +388,7 @@
         function saveData() {
             localStorage.setItem('dental_coins', userData.coins);
             localStorage.setItem('dental_last_login', userData.lastLogin);
+            localStorage.setItem('dental_login_history', JSON.stringify(userData.loginHistory));
             localStorage.setItem('dental_inventory', JSON.stringify(userData.inventory));
             localStorage.setItem('dental_active', JSON.stringify(userData.activeItems));
             localStorage.setItem('dental_quiz_history', JSON.stringify(userData.quizHistory));
@@ -386,16 +437,16 @@
         }
 
         function update() {
-            // APPLY EFFECTS FROM INVENTORY
-            // 1. Speed Boots
+            // ITEMS LOGIC
+            // Speed Boots
             if (userData.activeItems.includes('speed_boots')) player.speed = 8;
             else player.speed = player.baseSpeed;
 
-            // 2. Growth Potion (Pet Size)
+            // Growth Potion
             if (userData.activeItems.includes('big_pet')) { pet.w = 64; pet.h = 64; }
             else { pet.w = 32; pet.h = 32; }
 
-            // Movement Logic
+            // Movement
             player.isMoving = false;
             let dx = 0; let dy = 0;
 
@@ -409,20 +460,26 @@
                 player.y += dy;
                 player.isMoving = true;
                 
-                if(player.x < 40) player.x = 40;
-                if(player.y < 40) player.y = 40;
-                if(player.x > width - 60) player.x = width - 60;
-                if(player.y > height - 60) player.y = height - 60;
+                // New Boundary Logic (Constrained map)
+                if(player.x < mapMinX) player.x = mapMinX;
+                if(player.y < mapMinY) player.y = mapMinY;
+                if(player.x > mapMaxX - player.w) player.x = mapMaxX - player.w;
+                if(player.y > mapMaxY - player.h) player.y = mapMaxY - player.h;
 
-                // 3. Sparkle Effect
-                if (userData.activeItems.includes('sparkle')) {
-                    if (Math.random() > 0.5) {
-                        particles.push({
-                            x: player.x + player.w/2,
-                            y: player.y + player.h,
-                            life: 20
-                        });
-                    }
+                // Particle Emitters
+                let pColor = null;
+                if (userData.activeItems.includes('sparkle')) pColor = 'blue';
+                else if (userData.activeItems.includes('fire')) pColor = 'orange';
+                else if (userData.activeItems.includes('snow')) pColor = 'white';
+                else if (userData.activeItems.includes('rainbow')) pColor = `hsl(${Date.now()%360}, 100%, 50%)`;
+
+                if (pColor && Math.random() > 0.5) {
+                    particles.push({
+                        x: player.x + player.w/2,
+                        y: player.y + player.h,
+                        life: 20,
+                        color: pColor
+                    });
                 }
             }
 
@@ -450,16 +507,21 @@
         function draw() {
             const pat = ctx.createPattern(images.ground, "repeat");
             ctx.fillStyle = pat;
-            ctx.fillRect(0, 0, width, height);
+            // Draw background only in map area
+            ctx.fillRect(mapMinX, mapMinY, mapMaxX - mapMinX, mapMaxY - mapMinY);
 
             drawFence();
             ctx.drawImage(images.shop, shopDoor.x, shopDoor.y, shopDoor.w, shopDoor.h);
             
             grasses.forEach(g => {
-                let img = images['grass' + g.type];
-                ctx.drawImage(img, g.x, g.y, 32, 32);
+                // Only draw grass if inside map
+                if(g.x > mapMinX && g.x < mapMaxX && g.y > mapMinY && g.y < mapMaxY) {
+                    let img = images['grass' + g.type];
+                    ctx.drawImage(img, g.x, g.y, 32, 32);
+                }
             });
 
+            // Player Drawing
             let pImg;
             if (!player.isMoving) pImg = images.player_idle;
             else pImg = (player.frame === 0) ? images.player_walk1 : images.player_walk2;
@@ -468,38 +530,63 @@
             ctx.translate(player.x + player.w/2, player.y + player.h/2);
             ctx.scale(player.dir, 1); 
             
-            // 4. Ghost Effect (Opacity)
+            // Ghost Effect
             if (userData.activeItems.includes('ghost')) ctx.globalAlpha = 0.5;
+            // Shadow Mode
+            if (userData.activeItems.includes('shadow')) ctx.filter = 'brightness(0%)';
 
             ctx.drawImage(pImg, -player.w/2, -player.h/2, player.w, player.h);
-            ctx.globalAlpha = 1.0; // Reset opacity
+            ctx.filter = 'none'; // Reset filter
+            
+            // COSMETIC OVERLAYS (Emojis)
+            ctx.font = "20px Arial";
+            ctx.textAlign = "center";
+            
+            if (userData.activeItems.includes('crown')) ctx.fillText("👑", 0, -player.h/2 - 5);
+            if (userData.activeItems.includes('glasses')) ctx.fillText("🕶️", 2, -player.h/2 + 15);
+            if (userData.activeItems.includes('bunny')) ctx.fillText("🐰", 0, -player.h/2 - 5);
+            if (userData.activeItems.includes('bowtie')) ctx.fillText("🎀", 0, player.h/2);
+            if (userData.activeItems.includes('balloon')) ctx.fillText("🎈", -15, -player.h);
+
+            ctx.globalAlpha = 1.0; 
             ctx.restore();
 
+            // Pet
             let petImg = (pet.frame === 0) ? images.pet_fly1 : images.pet_fly2;
             ctx.drawImage(petImg, pet.x, pet.y - 10 * Math.sin(Date.now()/500), pet.w, pet.h);
 
+            // Particles
             particles.forEach(p => {
                 ctx.globalAlpha = p.life / 20;
-                ctx.drawImage(images.water, p.x, p.y, 16, 16);
+                if(p.color === 'blue') ctx.drawImage(images.water, p.x, p.y, 16, 16);
+                else {
+                    // Draw colored square/circle for other effects
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 5, 0, Math.PI*2);
+                    ctx.fill();
+                }
                 ctx.globalAlpha = 1.0;
             });
         }
 
         function drawFence() {
-            const tileSize = 40;
-            const cols = Math.ceil(width / tileSize);
-            const rows = Math.ceil(height / tileSize);
-            
-            for(let i=0; i<cols; i++) {
-                ctx.drawImage(images.fence, i*tileSize, 0, tileSize, tileSize);
-                ctx.drawImage(images.fence, i*tileSize, height-tileSize, tileSize, tileSize);
-                if(i % 5 === 0) {
-                    ctx.drawImage(images.torch, i*tileSize, -10, 30, 50);
-                }
+            // Top Fence
+            for(let x = mapMinX; x < mapMaxX; x += TILE_SIZE) {
+                ctx.drawImage(images.fence, x, mapMinY - TILE_SIZE, TILE_SIZE, TILE_SIZE); // Top
+                if((x/TILE_SIZE) % 3 === 0) ctx.drawImage(images.torch, x, mapMinY - TILE_SIZE - 10, 30, 50);
             }
-            for(let i=0; i<rows; i++) {
-                ctx.drawImage(images.fence, 0, i*tileSize, tileSize, tileSize);
-                ctx.drawImage(images.fence, width-tileSize, i*tileSize, tileSize, tileSize);
+            // Bottom Fence
+            for(let x = mapMinX; x < mapMaxX; x += TILE_SIZE) {
+                ctx.drawImage(images.fence, x, mapMaxY, TILE_SIZE, TILE_SIZE);
+            }
+            // Left Fence
+            for(let y = mapMinY; y < mapMaxY; y += TILE_SIZE) {
+                ctx.drawImage(images.fence, mapMinX - TILE_SIZE, y, TILE_SIZE, TILE_SIZE);
+            }
+            // Right Fence
+            for(let y = mapMinY; y < mapMaxY; y += TILE_SIZE) {
+                ctx.drawImage(images.fence, mapMaxX, y, TILE_SIZE, TILE_SIZE);
             }
         }
 
@@ -520,14 +607,25 @@
             document.getElementById('coin-count').innerText = userData.coins;
         }
 
-        // --- SHOP & INVENTORY SYSTEM ---
-
-        // Define all available items
+        // --- SHOP SYSTEM (14 ITEMS) ---
         const allItems = [
-            { id: 'sparkle', name: 'Sparkle Trail', cost: 100, emoji: '✨' },
+            // Effects
+            { id: 'sparkle', name: 'Water Trail', cost: 100, emoji: '💧' },
+            { id: 'fire', name: 'Fire Trail', cost: 150, emoji: '🔥' },
+            { id: 'snow', name: 'Snow Trail', cost: 150, emoji: '❄️' },
+            { id: 'rainbow', name: 'Rainbow Trail', cost: 300, emoji: '🌈' },
+            // Stat Mods
             { id: 'big_pet', name: 'Growth Potion', cost: 250, emoji: '🧪' },
             { id: 'speed_boots', name: 'Speed Boots', cost: 300, emoji: '👟' },
-            { id: 'ghost', name: 'Ghost Spirit', cost: 500, emoji: '👻' }
+            { id: 'ghost', name: 'Ghost Spirit', cost: 500, emoji: '👻' },
+            { id: 'shadow', name: 'Shadow Mode', cost: 600, emoji: '🌑' },
+            // Cosmetics
+            { id: 'crown', name: 'Gold Crown', cost: 1000, emoji: '👑' },
+            { id: 'glasses', name: 'Cool Shades', cost: 200, emoji: '🕶️' },
+            { id: 'bunny', name: 'Bunny Ears', cost: 350, emoji: '🐰' },
+            { id: 'bowtie', name: 'Bow Tie', cost: 150, emoji: '🎀' },
+            { id: 'balloon', name: 'Red Balloon', cost: 100, emoji: '🎈' },
+            { id: 'shield', name: 'Hero Badge', cost: 400, emoji: '🛡️' }
         ];
 
         function openShop() {
@@ -596,15 +694,48 @@
         window.toggleItem = function(id) {
             const idx = userData.activeItems.indexOf(id);
             if (idx > -1) {
-                userData.activeItems.splice(idx, 1); // Unequip
+                userData.activeItems.splice(idx, 1); 
             } else {
-                userData.activeItems.push(id); // Equip
+                userData.activeItems.push(id);
             }
             saveData();
-            openInventory(); // Refresh UI
+            openInventory(); 
         };
 
-        // --- QUIZ & TIMER LOGIC (Existing) ---
+        // --- CALENDAR SYSTEM ---
+        window.openCalendar = function() {
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+            
+            // Simple visual calendar for the current month
+            const today = new Date();
+            const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+            const currentMonthStr = today.toDateString().substring(4, 7); // e.g. "Oct"
+
+            for(let i=1; i<=daysInMonth; i++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'cal-day';
+                dayDiv.innerText = i;
+                
+                // Construct date string to match loginHistory format approx
+                // Note: toDateString() is "Fri Nov 28 2025"
+                // We check if any saved string contains "Nov 28" etc.
+                const checkStr = `${currentMonthStr} ${i < 10 ? '0'+i : i} ${today.getFullYear()}`;
+                
+                // Flexible check (handles 'Nov 8' vs 'Nov 08')
+                const isLogged = userData.loginHistory.some(d => {
+                   const dObj = new Date(d);
+                   return dObj.getDate() === i && dObj.getMonth() === today.getMonth();
+                });
+
+                if(isLogged) dayDiv.classList.add('active');
+                
+                grid.appendChild(dayDiv);
+            }
+            document.getElementById('calendar-modal').style.display = 'block';
+        };
+
+        // --- QUIZ LOGIC (CONSECUTIVE) ---
         const quizQuestions = [
             { q: "How long should you brush?", a: ["30 seconds", "2 minutes", "5 minutes"], correct: 1 },
             { q: "How often should you floss?", a: ["Once a week", "Every day", "Never"], correct: 1 },
@@ -634,10 +765,22 @@
                 return;
             }
 
-            const availableIndices = quizQuestions.map((_, i) => i).filter(i => !userData.quizHistory.answered.includes(i));
+            loadNextQuestion();
+        };
 
+        function loadNextQuestion() {
+            // Check limit again in case loop
+            if (userData.quizHistory.answered.length >= 3) {
+                closeModal('quiz-modal');
+                alert("🎉 Daily Quizzes Completed!");
+                return;
+            }
+
+            const availableIndices = quizQuestions.map((_, i) => i).filter(i => !userData.quizHistory.answered.includes(i));
+            
             if (availableIndices.length === 0) {
                 alert("You've answered all available questions!");
+                closeModal('quiz-modal');
                 return;
             }
 
@@ -671,12 +814,20 @@
                     
                     saveData();
                     updateUI();
-                    closeModal('quiz-modal');
+                    
+                    // AUTO LOAD NEXT QUESTION
+                    if (userData.quizHistory.answered.length < 3) {
+                        loadNextQuestion();
+                    } else {
+                        closeModal('quiz-modal');
+                        alert("🎉 You finished all quizzes for today!");
+                    }
                 };
                 opts.appendChild(btn);
             });
-        };
+        }
 
+        // BRUSHING TIMER
         let brushInterval;
         document.getElementById('brush-btn').addEventListener('click', () => {
             document.getElementById('timer-modal').style.display = 'block';
