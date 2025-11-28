@@ -2,99 +2,112 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Viewport settings for iPhone: prevents zooming, handles the notch (safe-area) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- iOS Web App Settings -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="DentalPet">
+    
+    <!-- Link to Manifest -->
+    <link rel="manifest" href="manifest.json">
+
     <title>Dental Pet Adventure</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        /* RESET & BASIC SETUP */
+        * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; user-select: none; -webkit-user-select: none; }
+        body { 
+            overflow: hidden; 
+            background-color: #87CEEB; /* Sky Blue */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-        body {
-            margin: 0;
+        /* GAME CONTAINER */
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
             overflow: hidden;
-            background-color: #2c3e50;
-            font-family: 'Press Start 2P', cursive;
-            color: white;
-            touch-action: none; /* Prevent mobile scrolling */
         }
 
-        #gameCanvas {
-            display: block;
-            margin: 0 auto;
-            background-color: #87CEEB; /* Sky blue */
-            image-rendering: pixelated;
-        }
+        /* CANVAS */
+        canvas { display: block; }
 
-        /* UI OVERLAYS */
-        .ui-layer {
+        /* UI OVERLAY */
+        #ui-layer {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; /* Let clicks pass through to canvas */
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
 
-        .hud {
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            text-shadow: 2px 2px 0 #000;
-            pointer-events: auto;
-        }
-
-        .btn {
-            background: #e67e22;
-            border: 2px solid #fff;
+        /* HUD ITEMS */
+        .hud-item {
+            position: absolute;
+            background: rgba(0,0,0,0.6);
             color: white;
-            padding: 10px;
-            font-family: 'Press Start 2P', cursive;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 18px;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #coin-display { top: 20px; left: 20px; border: 2px solid gold; }
+        #shop-btn { 
+            top: 20px; right: 20px; 
+            background: #4CAF50; 
             cursor: pointer;
-            box-shadow: 4px 4px 0 #000;
+            border: 2px solid #fff;
         }
-        .btn:active { box-shadow: 2px 2px 0 #000; transform: translate(2px, 2px); }
+        #shop-btn:active { transform: scale(0.95); }
 
-        /* MODALS */
-        .modal {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #fff;
-            color: #333;
-            padding: 20px;
-            border: 4px solid #000;
-            box-shadow: 10px 10px 0 rgba(0,0,0,0.5);
-            display: none; /* Hidden by default */
-            text-align: center;
-            z-index: 100;
-            pointer-events: auto;
-            min-width: 300px;
-        }
-
-        .modal h2 { margin-top: 0; color: #e67e22; }
-        .modal input {
-            padding: 10px;
-            font-family: 'Press Start 2P';
-            width: 80%;
-            margin-bottom: 10px;
-        }
-
-        /* INTERACTION PROMPT */
-        #interactPrompt {
+        /* CONTROLS (Mobile) */
+        .control-btn {
             position: absolute;
-            bottom: 100px; /* Positioned above player usually */
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.7);
-            padding: 10px;
-            border-radius: 5px;
-            display: none;
-            pointer-events: none;
+            bottom: 40px;
+            width: 70px; height: 70px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            pointer-events: auto;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 30px; color: white;
         }
+        .control-btn:active { background: rgba(255, 255, 255, 0.6); }
+        #btn-left { left: 30px; }
+        #btn-right { left: 120px; }
+        #btn-jump { right: 30px; background: rgba(255, 200, 0, 0.4); }
 
-        /* SHOP GRID */
+        /* MODALS (Shop & Daily Login) */
+        .modal {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center; align-items: center;
+            pointer-events: auto;
+            z-index: 100;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            width: 90%; max-width: 400px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            position: relative;
+        }
+        .modal h2 { margin-bottom: 15px; color: #333; }
+        .close-btn {
+            position: absolute; top: 10px; right: 15px;
+            font-size: 24px; cursor: pointer; color: #888;
+        }
+        
+        /* Shop Grid */
         .shop-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -102,372 +115,480 @@
             margin-bottom: 15px;
         }
         .shop-item {
-            border: 2px solid #ccc;
+            background: #f0f0f0;
             padding: 10px;
+            border-radius: 10px;
             cursor: pointer;
+            border: 2px solid transparent;
         }
-        .shop-item:hover { background: #eee; }
+        .shop-item.selected { border-color: #4CAF50; background: #e8f5e9; }
+        .shop-item img { width: 50px; height: 50px; object-fit: contain; }
+        .buy-btn {
+            background: #4CAF50; color: white; border: none;
+            padding: 10px 20px; border-radius: 5px; font-size: 16px; cursor: pointer;
+            width: 100%;
+        }
+        .buy-btn:disabled { background: #ccc; }
+
+        /* Daily Login Specifics */
+        #daily-reward-amt { font-size: 40px; color: gold; display: block; margin: 20px 0; text-shadow: 1px 1px 0 #000; }
+        #claim-btn { background: gold; color: #8B4513; font-weight: bold; }
 
     </style>
 </head>
 <body>
 
-    <!-- GAME CANVAS -->
+<div id="game-container">
     <canvas id="gameCanvas"></canvas>
 
-    <!-- UI LAYER -->
-    <div class="ui-layer">
-        <div class="hud">
-            <div>
-                <div id="playerNameDisplay">Player</div>
-                <div style="color: #f1c40f; margin-top: 5px;">💰 <span id="coinCount">0</span></div>
-            </div>
-            <div>
-                <div id="petNameDisplay" style="color: #fab1a0;">Pet</div>
-                <button class="btn" onclick="openRenameModal()" style="font-size: 10px; margin-top:5px;">Rename</button>
-            </div>
+    <div id="ui-layer">
+        <!-- HUD -->
+        <div id="coin-display">
+            <span style="color: gold;">●</span> <span id="coin-count">0</span>
         </div>
-        
-        <!-- Interaction Hint -->
-        <div id="interactPrompt">Press 'E' to Open Shop</div>
-    </div>
+        <div id="shop-btn" class="hud-item">🛒 Shop</div>
 
-    <!-- DAILY LOGIN MODAL -->
-    <div id="dailyModal" class="modal">
-        <h2>Daily Reward!</h2>
-        <p>Welcome back!</p>
-        <p style="font-size: 40px;">🎁</p>
-        <p>You got +100 Coins!</p>
-        <button class="btn" onclick="claimDaily()">Awesome!</button>
-    </div>
-
-    <!-- RENAME MODAL -->
-    <div id="renameModal" class="modal">
-        <h2>Identity</h2>
-        <label>Player Name:</label><br>
-        <input type="text" id="inputPlayerName" maxlength="10"><br>
-        <label>Pet Name:</label><br>
-        <input type="text" id="inputPetName" maxlength="10"><br>
-        <button class="btn" onclick="saveNames()">Save</button>
-        <button class="btn" style="background:#e74c3c" onclick="closeModal('renameModal')">Cancel</button>
+        <!-- Controls -->
+        <div id="btn-left" class="control-btn">←</div>
+        <div id="btn-right" class="control-btn">→</div>
+        <div id="btn-jump" class="control-btn">↑</div>
     </div>
 
     <!-- SHOP MODAL -->
-    <div id="shopModal" class="modal">
-        <h2>Dental Shop</h2>
-        <div class="shop-grid">
-            <div class="shop-item" onclick="buyItem('Toothbrush', 50)">
-                <div>🪥 Brush</div>
-                <div>50 Coins</div>
+    <div id="shop-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="toggleShop()">×</span>
+            <h2>Pet Shop</h2>
+            <div class="shop-grid">
+                <div class="shop-item" onclick="selectItem('hat')">
+                    <div style="font-size:30px">🎩</div>
+                    <p>Top Hat</p>
+                    <p>50 Coins</p>
+                </div>
+                <div class="shop-item" onclick="selectItem('glasses')">
+                    <div style="font-size:30px">👓</div>
+                    <p>Glasses</p>
+                    <p>30 Coins</p>
+                </div>
+                <div class="shop-item" onclick="selectItem('bowtie')">
+                    <div style="font-size:30px">🎀</div>
+                    <p>Bowtie</p>
+                    <p>40 Coins</p>
+                </div>
+                <div class="shop-item" onclick="selectItem('crown')">
+                    <div style="font-size:30px">👑</div>
+                    <p>Crown</p>
+                    <p>100 Coins</p>
+                </div>
             </div>
-            <div class="shop-item" onclick="buyItem('Floss', 30)">
-                <div>🧵 Floss</div>
-                <div>30 Coins</div>
-            </div>
+            <button id="buy-button" class="buy-btn" onclick="buyItem()">Select an item</button>
         </div>
-        <button class="btn" style="background:#e74c3c" onclick="closeModal('shopModal')">Leave</button>
     </div>
 
-    <script>
-        /* ================= CONFIGURATION ================= */
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+    <!-- DAILY LOGIN MODAL -->
+    <div id="daily-modal" class="modal">
+        <div class="modal-content">
+            <h2>Daily Bonus!</h2>
+            <p>Welcome back!</p>
+            <span id="daily-reward-amt">+50</span>
+            <p>Coins added to your wallet.</p>
+            <br>
+            <button id="claim-btn" class="buy-btn" onclick="claimDaily()">Claim Reward!</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- ASSET LOADER ---
+    const assets = {};
+    const imageSources = {
+        chest: 'assets/chest.png',
+        coin: 'assets/coin.png',
+        char_idle: 'assets/char_idle.png',
+        char_jump: 'assets/char_jump.png',
+        char_walk1: 'assets/char_walk1.png',
+        char_walk2: 'assets/char_walk2.png',
+        pet_idle: 'assets/pet_idle.png',
+        pet_fly1: 'assets/pet_fly1.png',
+        pet_fly2: 'assets/pet_fly2.png',
+        ground: 'assets/ground_tile.png',
+        grass: 'assets/grass_tuft.png',
+        fence: 'assets/fence.png',
+        torch: 'assets/torch.png',
+        shop: 'assets/shop_door.png'
+    };
+
+    let assetsLoaded = 0;
+    const totalAssets = Object.keys(imageSources).length;
+
+    function loadAssets(callback) {
+        for (let key in imageSources) {
+            assets[key] = new Image();
+            assets[key].src = imageSources[key];
+            assets[key].onload = () => {
+                assetsLoaded++;
+                if (assetsLoaded === totalAssets) callback();
+            };
+            // Fallback for missing images (draws colored rects)
+            assets[key].onerror = () => {
+                assetsLoaded++;
+                console.warn(`Failed to load ${key}`);
+                if (assetsLoaded === totalAssets) callback();
+            };
+        }
+    }
+
+    // --- GAME VARIABLES ---
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Game State
+    let coins = parseInt(localStorage.getItem('dentalCoins')) || 0;
+    let inventory = JSON.parse(localStorage.getItem('dentalInventory')) || [];
+    
+    // Update Coin UI immediately
+    document.getElementById('coin-count').innerText = coins;
+
+    // Physics
+    const GRAVITY = 0.6;
+    const FRICTION = 0.8;
+    const JUMP_FORCE = -12;
+    const SPEED = 5;
+
+    // Camera
+    let cameraX = 0;
+
+    // Input
+    const keys = { left: false, right: false, up: false };
+
+    // Game Objects
+    const player = {
+        x: 100, y: 0, width: 50, height: 80,
+        vx: 0, vy: 0,
+        grounded: false,
+        facingRight: true,
+        animTimer: 0,
+        frame: 0
+    };
+
+    const pet = {
+        x: 60, y: 0, width: 30, height: 30,
+        targetX: 0, targetY: 0,
+        animTimer: 0,
+        floatOffset: 0
+    };
+
+    // Level Data
+    const groundLevel = 0; // Will be set in resize
+    const platforms = [];
+    const decorations = [];
+    const collectables = [];
+
+    // --- INITIALIZATION ---
+    function init() {
+        resize();
+        window.addEventListener('resize', resize);
+        setupControls();
+        generateLevel();
+        checkDailyLogin(); // Check for daily reward on start
+        requestAnimationFrame(gameLoop);
+    }
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        player.y = canvas.height - 150; // Reset player position to ground
+    }
+
+    function generateLevel() {
+        // Ground
+        for(let i=0; i<50; i++) {
+            platforms.push({ x: i * 100, y: canvas.height - 60, w: 100, h: 60, type: 'ground' });
+            
+            // Random Grass
+            if(Math.random() > 0.5) {
+                decorations.push({ x: i*100 + Math.random()*80, y: canvas.height - 90, type: 'grass' });
+            }
+        }
+
+        // Floating Platforms
+        for(let i=1; i<10; i++) {
+            let px = i * 400 + Math.random() * 100;
+            let py = canvas.height - 200 - (Math.random() * 100);
+            platforms.push({ x: px, y: py, w: 150, h: 20, type: 'platform' });
+
+            // Add coins on platforms
+            collectables.push({ x: px + 50, y: py - 40, w: 30, h: 30, type: 'coin', collected: false });
+        }
+    }
+
+    // --- DAILY LOGIN SYSTEM ---
+    function checkDailyLogin() {
+        const lastLoginDate = localStorage.getItem('lastLoginDate');
+        const today = new Date().toDateString(); // Format: "Mon Jan 01 2024"
+
+        if (lastLoginDate !== today) {
+            // It's a new day!
+            document.getElementById('daily-modal').style.display = 'flex';
+        }
+    }
+
+    function claimDaily() {
+        const reward = 50;
+        coins += reward;
+        updateCoins();
         
-        // Game State
-        let coins = parseInt(localStorage.getItem('dental_coins')) || 0;
-        let playerName = localStorage.getItem('dental_playerName') || "Dr. Smile";
-        let petName = localStorage.getItem('dental_petName') || "Flossy";
-        let lastLogin = localStorage.getItem('dental_lastLogin') || "";
-
-        // Update HUD immediately
-        document.getElementById('coinCount').innerText = coins;
-        document.getElementById('playerNameDisplay').innerText = playerName;
-        document.getElementById('petNameDisplay').innerText = petName;
-
-        /* ================= ASSET LOADING ================= */
-        const images = {};
-        const assetsToLoad = [
-            { key: 'player', src: 'assets/char_idle.png' },
-            { key: 'pet', src: 'assets/pet_idle.png' },
-            { key: 'shop', src: 'assets/shop_door.png' },
-            { key: 'ground', src: 'assets/ground_tile.png' }
-        ];
-
-        let assetsLoaded = 0;
-        assetsToLoad.forEach(asset => {
-            const img = new Image();
-            img.src = asset.src;
-            img.onload = () => { assetsLoaded++; };
-            // Fallback if image missing
-            img.onerror = () => { console.log(`Missing: ${asset.src}`); assetsLoaded++; }; 
-            images[asset.key] = img;
-        });
-
-        /* ================= GAME OBJECTS ================= */
+        // Save today as the last login date
+        localStorage.setItem('lastLoginDate', new Date().toDateString());
         
-        // 1. PLAYER (Controlled by User)
-        const player = {
-            x: 100,
-            y: 300,
-            width: 48,
-            height: 48,
-            speed: 4,
-            moving: false,
-            direction: 1, // 1 right, -1 left
-            color: '#3498db' // Fallback color
-        };
+        document.getElementById('daily-modal').style.display = 'none';
+    }
 
-        // 2. PET (AI Controlled)
-        const pet = {
-            x: 50,
-            y: 320,
-            width: 32,
-            height: 32,
-            speed: 1.5,
-            state: 'idle', // idle, walk
-            moveTimer: 0,
-            direction: 1,
-            color: '#e74c3c' // Fallback color
-        };
+    // --- SHOP SYSTEM ---
+    let selectedItemCost = 0;
+    let selectedItemName = "";
 
-        // 3. SHOP (Static Interaction Point)
-        const shop = {
-            x: 400,
-            y: 250,
-            width: 80,
-            height: 80,
-            color: '#f1c40f'
-        };
+    // Toggle Shop Modal
+    document.getElementById('shop-btn').addEventListener('click', toggleShop);
 
-        // Input Keys
-        const keys = {
-            w: false, a: false, s: false, d: false,
-            ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false
-        };
+    function toggleShop() {
+        const modal = document.getElementById('shop-modal');
+        modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        // Reset selection
+        document.querySelectorAll('.shop-item').forEach(el => el.classList.remove('selected'));
+        document.getElementById('buy-button').innerText = "Select an item";
+        document.getElementById('buy-button').disabled = true;
+    }
 
-        /* ================= EVENT LISTENERS ================= */
-        window.addEventListener('resize', resizeCanvas);
-        window.addEventListener('keydown', (e) => {
-            if(keys.hasOwnProperty(e.key)) keys[e.key] = true;
+    window.selectItem = function(item) {
+        // Visual selection
+        document.querySelectorAll('.shop-item').forEach(el => el.classList.remove('selected'));
+        event.currentTarget.classList.add('selected');
+
+        // Logic
+        selectedItemName = item;
+        if(item === 'hat') selectedItemCost = 50;
+        if(item === 'glasses') selectedItemCost = 30;
+        if(item === 'bowtie') selectedItemCost = 40;
+        if(item === 'crown') selectedItemCost = 100;
+
+        const btn = document.getElementById('buy-button');
+        if (inventory.includes(item)) {
+            btn.innerText = "Already Owned";
+            btn.disabled = true;
+        } else if (coins >= selectedItemCost) {
+            btn.innerText = `Buy for ${selectedItemCost}`;
+            btn.disabled = false;
+        } else {
+            btn.innerText = "Not enough coins";
+            btn.disabled = true;
+        }
+    }
+
+    window.buyItem = function() {
+        if(coins >= selectedItemCost && !inventory.includes(selectedItemName)) {
+            coins -= selectedItemCost;
+            inventory.push(selectedItemName);
+            updateCoins();
+            localStorage.setItem('dentalInventory', JSON.stringify(inventory));
             
-            // Interact Key
-            if(e.key.toLowerCase() === 'e') {
-                checkInteraction();
+            alert(`You bought the ${selectedItemName}!`);
+            toggleShop(); // Close shop
+        }
+    }
+
+    function updateCoins() {
+        document.getElementById('coin-count').innerText = coins;
+        localStorage.setItem('dentalCoins', coins);
+    }
+
+
+    // --- INPUT HANDLING ---
+    function setupControls() {
+        // Keyboard
+        window.addEventListener('keydown', e => {
+            if(e.code === 'ArrowRight') keys.right = true;
+            if(e.code === 'ArrowLeft') keys.left = true;
+            if(e.code === 'ArrowUp' || e.code === 'Space') {
+                if(player.grounded) player.vy = JUMP_FORCE;
             }
         });
-        window.addEventListener('keyup', (e) => {
-            if(keys.hasOwnProperty(e.key)) keys[e.key] = false;
+        window.addEventListener('keyup', e => {
+            if(e.code === 'ArrowRight') keys.right = false;
+            if(e.code === 'ArrowLeft') keys.left = false;
         });
 
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            // Keep ground level relative to screen
-            groundLevel = canvas.height - 100;
-            player.y = groundLevel - player.height;
-            pet.y = groundLevel - pet.height + 10; // Pet is smaller
-            shop.y = groundLevel - shop.height;
-            shop.x = canvas.width - 200; // Shop always on right side
-        }
-        let groundLevel = 0;
-        resizeCanvas();
+        // Touch
+        const btnLeft = document.getElementById('btn-left');
+        const btnRight = document.getElementById('btn-right');
+        const btnJump = document.getElementById('btn-jump');
 
-        /* ================= LOGIC ================= */
+        const addTouch = (elem, key) => {
+            elem.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; });
+            elem.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; });
+        };
 
-        // Daily Login Logic
-        function checkDailyLogin() {
-            const today = new Date().toDateString();
-            if (lastLogin !== today) {
-                document.getElementById('dailyModal').style.display = 'block';
+        addTouch(btnLeft, 'left');
+        addTouch(btnRight, 'right');
+        
+        btnJump.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if(player.grounded) player.vy = JUMP_FORCE;
+        });
+    }
+
+    // --- GAME LOGIC ---
+    function update() {
+        // Player Movement
+        if (keys.right) { player.vx += 1; player.facingRight = true; }
+        if (keys.left) { player.vx -= 1; player.facingRight = false; }
+
+        player.vx *= FRICTION;
+        player.vy += GRAVITY;
+
+        player.x += player.vx;
+        player.y += player.vy;
+
+        // Collision Detection
+        player.grounded = false;
+        
+        // Ground/Platform Collision
+        platforms.forEach(plat => {
+            if (player.x + player.width > plat.x && 
+                player.x < plat.x + plat.w &&
+                player.y + player.height > plat.y &&
+                player.y + player.height < plat.y + plat.h + 20 && // Tolerance
+                player.vy >= 0) {
+                    player.y = plat.y - player.height;
+                    player.vy = 0;
+                    player.grounded = true;
             }
-        }
+        });
 
-        function claimDaily() {
-            coins += 100;
-            updateData();
-            const today = new Date().toDateString();
-            localStorage.setItem('dental_lastLogin', today);
-            closeModal('dailyModal');
-        }
-
-        // Rename Logic
-        function openRenameModal() {
-            document.getElementById('inputPlayerName').value = playerName;
-            document.getElementById('inputPetName').value = petName;
-            document.getElementById('renameModal').style.display = 'block';
-        }
-
-        function saveNames() {
-            const pName = document.getElementById('inputPlayerName').value;
-            const ptName = document.getElementById('inputPetName').value;
-            if(pName) playerName = pName;
-            if(ptName) petName = ptName;
-            updateData();
-            closeModal('renameModal');
-        }
-
-        // Shop Logic
-        function checkInteraction() {
-            const dist = Math.abs((player.x + player.width/2) - (shop.x + shop.width/2));
-            if (dist < 80) {
-                document.getElementById('shopModal').style.display = 'block';
+        // Coin Collection
+        collectables.forEach(c => {
+            if (!c.collected &&
+                player.x < c.x + c.w &&
+                player.x + player.width > c.x &&
+                player.y < c.y + c.h &&
+                player.y + player.height > c.y) {
+                    c.collected = true;
+                    coins += 10;
+                    updateCoins();
             }
-        }
+        });
 
-        function buyItem(item, cost) {
-            if(coins >= cost) {
-                coins -= cost;
-                updateData();
-                alert(`Bought ${item}!`);
+        // Pet Follow Logic
+        const targetX = player.facingRight ? player.x - 40 : player.x + 60;
+        const targetY = player.y + 10;
+        
+        pet.x += (targetX - pet.x) * 0.05;
+        pet.y += (targetY - pet.y) * 0.05;
+        
+        // Pet Float Animation
+        pet.floatOffset = Math.sin(Date.now() / 300) * 5;
+
+        // Camera Follow
+        cameraX = player.x - canvas.width / 2 + player.width / 2;
+        // Limit camera so it doesn't show negative space
+        if(cameraX < 0) cameraX = 0;
+    }
+
+    // --- RENDERING ---
+    function draw() {
+        // Clear Screen
+        ctx.fillStyle = '#87CEEB';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.save();
+        ctx.translate(-cameraX, 0);
+
+        // Draw Decor (Background)
+        decorations.forEach(d => {
+            if(assets.grass.complete) ctx.drawImage(assets.grass, d.x, d.y, 40, 30);
+        });
+
+        // Draw Platforms
+        platforms.forEach(p => {
+            if(p.type === 'ground') {
+                if(assets.ground.complete) {
+                    // Tiling ground
+                    ctx.drawImage(assets.ground, p.x, p.y, p.w, p.h);
+                } else {
+                    ctx.fillStyle = '#654321';
+                    ctx.fillRect(p.x, p.y, p.w, p.h);
+                }
             } else {
-                alert("Not enough coins!");
+                ctx.fillStyle = '#8B4513';
+                ctx.fillRect(p.x, p.y, p.w, p.h);
+                // Grass top on platform
+                ctx.fillStyle = '#4CAF50';
+                ctx.fillRect(p.x, p.y, p.w, 10);
             }
-        }
+        });
 
-        function closeModal(id) {
-            document.getElementById(id).style.display = 'none';
-        }
-
-        function updateData() {
-            localStorage.setItem('dental_coins', coins);
-            localStorage.setItem('dental_playerName', playerName);
-            localStorage.setItem('dental_petName', petName);
-            
-            document.getElementById('coinCount').innerText = coins;
-            document.getElementById('playerNameDisplay').innerText = playerName;
-            document.getElementById('petNameDisplay').innerText = petName;
-        }
-
-        /* ================= GAME LOOP ================= */
-
-        function update() {
-            // 1. Player Movement
-            player.moving = false;
-            if (keys.a || keys.ArrowLeft) {
-                player.x -= player.speed;
-                player.direction = -1;
-                player.moving = true;
-            }
-            if (keys.d || keys.ArrowRight) {
-                player.x += player.speed;
-                player.direction = 1;
-                player.moving = true;
-            }
-
-            // Boundaries
-            if (player.x < 0) player.x = 0;
-            if (player.x > canvas.width - player.width) player.x = canvas.width - player.width;
-
-            // 2. Pet AI (Random Movement)
-            pet.moveTimer++;
-            if (pet.moveTimer > 100) { // Every ~1.5 seconds change mind
-                pet.moveTimer = 0;
-                const rand = Math.random();
-                if (rand < 0.3) pet.state = 'idle';
-                else if (rand < 0.6) { pet.state = 'walk'; pet.direction = -1; } // Left
-                else { pet.state = 'walk'; pet.direction = 1; } // Right
-            }
-
-            if (pet.state === 'walk') {
-                pet.x += pet.speed * pet.direction;
-            }
-
-            // Keep pet on screen
-            if (pet.x < 0) { pet.x = 0; pet.direction = 1; }
-            if (pet.x > canvas.width - pet.width) { pet.x = canvas.width - pet.width; pet.direction = -1; }
-
-            // 3. Interaction Check (Show/Hide Prompt)
-            const distToShop = Math.abs((player.x + player.width/2) - (shop.x + shop.width/2));
-            const prompt = document.getElementById('interactPrompt');
-            
-            if (distToShop < 80) {
-                prompt.style.display = 'block';
-                prompt.style.left = (player.x + 20) + 'px';
-                prompt.style.bottom = (canvas.height - player.y + 10) + 'px';
-            } else {
-                prompt.style.display = 'none';
-            }
-        }
-
-        function draw() {
-            // Clear Screen
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw Ground
-            ctx.fillStyle = '#2ecc71';
-            ctx.fillRect(0, groundLevel, canvas.width, 100);
-            // If texture exists
-            if(images.ground.complete && images.ground.naturalWidth !== 0) {
-                // Simple tiling
-                for(let i=0; i<canvas.width; i+=50) {
-                    ctx.drawImage(images.ground, i, groundLevel, 50, 50);
+        // Draw Coins
+        collectables.forEach(c => {
+            if(!c.collected) {
+                if(assets.coin.complete) {
+                    ctx.drawImage(assets.coin, c.x, c.y, c.w, c.h);
+                } else {
+                    ctx.fillStyle = 'gold';
+                    ctx.beginPath();
+                    ctx.arc(c.x + c.w/2, c.y + c.h/2, c.w/2, 0, Math.PI*2);
+                    ctx.fill();
                 }
             }
+        });
 
-            // Draw Shop
-            if(images.shop.complete && images.shop.naturalWidth !== 0) {
-                ctx.drawImage(images.shop, shop.x, shop.y, shop.width, shop.height);
-            } else {
-                ctx.fillStyle = shop.color;
-                ctx.fillRect(shop.x, shop.y, shop.width, shop.height);
-            }
-            // Shop Label
-            ctx.fillStyle = "white";
-            ctx.font = "12px 'Press Start 2P'";
-            ctx.textAlign = "center";
-            ctx.fillText("SHOP", shop.x + shop.width/2, shop.y - 10);
-
-            // Draw Player
-            ctx.save();
-            if (player.direction === -1) {
-                ctx.scale(-1, 1);
-                ctx.translate(-player.x * 2 - player.width, 0);
-            }
-            
-            if(images.player.complete && images.player.naturalWidth !== 0) {
-                ctx.drawImage(images.player, player.x, player.y, player.width, player.height);
-            } else {
-                ctx.fillStyle = player.color;
-                ctx.fillRect(player.x, player.y, player.width, player.height);
-            }
-            ctx.restore();
-
-            // Draw Player Name
-            ctx.fillStyle = "white";
-            ctx.font = "10px 'Press Start 2P'";
-            ctx.fillText(playerName, player.x + player.width/2, player.y - 10);
-
-
-            // Draw Pet
-            ctx.save();
-            if (pet.direction === -1) {
-                ctx.scale(-1, 1);
-                ctx.translate(-pet.x * 2 - pet.width, 0);
-            }
-
-            if(images.pet.complete && images.pet.naturalWidth !== 0) {
-                ctx.drawImage(images.pet, pet.x, pet.y, pet.width, pet.height);
-            } else {
-                ctx.fillStyle = pet.color;
-                ctx.fillRect(pet.x, pet.y, pet.width, pet.height);
-            }
-            ctx.restore();
-
-            // Draw Pet Name
-            ctx.fillStyle = "#fab1a0";
-            ctx.fillText(petName, pet.x + pet.width/2, pet.y - 10);
+        // Draw Player
+        let charImg = assets.char_idle;
+        if(!player.grounded) charImg = assets.char_jump;
+        else if(Math.abs(player.vx) > 0.5) {
+            // Simple walk cycle
+            player.animTimer++;
+            if(Math.floor(player.animTimer / 10) % 2 === 0) charImg = assets.char_walk1;
+            else charImg = assets.char_walk2;
         }
 
-        function gameLoop() {
-            update();
-            draw();
-            requestAnimationFrame(gameLoop);
+        ctx.save();
+        if(!player.facingRight) {
+            ctx.translate(player.x + player.width, player.y);
+            ctx.scale(-1, 1);
+            if(charImg.complete) ctx.drawImage(charImg, 0, 0, player.width, player.height);
+            else { ctx.fillStyle = 'red'; ctx.fillRect(0,0,player.width, player.height); }
+        } else {
+            if(charImg.complete) ctx.drawImage(charImg, player.x, player.y, player.width, player.height);
+            else { ctx.fillStyle = 'red'; ctx.fillRect(player.x,player.y,player.width, player.height); }
+        }
+        ctx.restore();
+
+        // Draw Pet
+        let petImg = assets.pet_idle;
+        if(Math.abs(player.vx) > 0.5) {
+             if(Math.floor(Date.now() / 200) % 2 === 0) petImg = assets.pet_fly1;
+             else petImg = assets.pet_fly2;
         }
 
-        // Start
-        checkDailyLogin();
-        gameLoop();
+        if(petImg.complete) {
+            ctx.drawImage(petImg, pet.x, pet.y + pet.floatOffset, pet.width, pet.height);
+        } else {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(pet.x, pet.y, pet.width, pet.height);
+        }
 
-    </script>
+        ctx.restore();
+    }
+
+    function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    // Start Game
+    loadAssets(init);
+
+</script>
 </body>
 </html>
