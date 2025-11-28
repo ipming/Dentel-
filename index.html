@@ -12,7 +12,7 @@
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #222; /* Darker background for the void outside fence */
+            background-color: #333;
             font-family: 'Arial', sans-serif;
             touch-action: none;
             user-select: none;
@@ -240,7 +240,7 @@
 
     <div id="shop-modal" class="modal">
         <h2>🏪 Dental Shop</h2>
-        <p>Customize your character & effects!</p>
+        <p>Customize Player & Pet!</p>
         <div id="shop-items"></div>
         <br>
         <button class="btn" onclick="closeModal('shop-modal')">Close</button>
@@ -248,7 +248,7 @@
 
     <div id="inventory-modal" class="modal">
         <h2>🎒 My Backpack</h2>
-        <p>Toggle items On/Off</p>
+        <p>Limit: Max 3 Equipped Items</p>
         <div id="inventory-items"></div>
         <br>
         <button class="btn" onclick="closeModal('inventory-modal')">Close</button>
@@ -333,36 +333,27 @@
             quizHistory: JSON.parse(localStorage.getItem('dental_quiz_history')) || { date: null, answered: [] }
         };
 
-        const player = { x: 300, y: 300, w: 40, h: 40, baseSpeed: 4, speed: 4, frame: 0, dir: 1, isMoving: false };
+        // INCREASED PLAYER SIZE (w:64, h:64)
+        const player = { x: 300, y: 300, w: 64, h: 64, baseSpeed: 4, speed: 4, frame: 0, dir: 1, isMoving: false };
         const pet = { x: 340, y: 300, w: 32, h: 32, frame: 0 };
         const shopDoor = { x: 0, y: 50, w: 60, h: 60 };
         const grasses = [];
         let particles = [];
-
-        // MAP SETTINGS
         const TILE_SIZE = 40;
-        const MARGIN_TILES = 2; // 2 tiles on each side = 4 tiles total reduction
-        let mapMinX, mapMaxX, mapMinY, mapMaxY;
 
         function resize() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-            
-            // Define playable area (smaller than screen)
-            mapMinX = MARGIN_TILES * TILE_SIZE;
-            mapMinY = MARGIN_TILES * TILE_SIZE;
-            mapMaxX = width - (MARGIN_TILES * TILE_SIZE);
-            mapMaxY = height - (MARGIN_TILES * TILE_SIZE);
-
             shopDoor.x = width / 2 - 30; 
-            shopDoor.y = mapMinY - 10; // Place door on the top fence line
+            shopDoor.y = 50; 
         }
 
         function initGrass() {
+            grasses.length = 0; // Clear existing
             for(let i=0; i<30; i++) {
                 grasses.push({
-                    x: mapMinX + Math.random() * (mapMaxX - mapMinX),
-                    y: mapMinY + Math.random() * (mapMaxY - mapMinY),
+                    x: Math.random() * width,
+                    y: Math.random() * height,
                     type: Math.floor(Math.random() * 3) + 1 
                 });
             }
@@ -373,12 +364,9 @@
             if (userData.lastLogin !== today) {
                 userData.coins += 50;
                 userData.lastLogin = today;
-                
-                // Add to history if not present
                 if(!userData.loginHistory.includes(today)) {
                     userData.loginHistory.push(today);
                 }
-                
                 saveData();
                 document.getElementById('login-modal').style.display = 'block';
                 updateUI();
@@ -438,11 +426,9 @@
 
         function update() {
             // ITEMS LOGIC
-            // Speed Boots
             if (userData.activeItems.includes('speed_boots')) player.speed = 8;
             else player.speed = player.baseSpeed;
 
-            // Growth Potion
             if (userData.activeItems.includes('big_pet')) { pet.w = 64; pet.h = 64; }
             else { pet.w = 32; pet.h = 32; }
 
@@ -460,11 +446,11 @@
                 player.y += dy;
                 player.isMoving = true;
                 
-                // New Boundary Logic (Constrained map)
-                if(player.x < mapMinX) player.x = mapMinX;
-                if(player.y < mapMinY) player.y = mapMinY;
-                if(player.x > mapMaxX - player.w) player.x = mapMaxX - player.w;
-                if(player.y > mapMaxY - player.h) player.y = mapMaxY - player.h;
+                // Full map boundaries (Account for fence size approx 40)
+                if(player.x < 40) player.x = 40;
+                if(player.y < 40) player.y = 40;
+                if(player.x > width - 40 - player.w) player.x = width - 40 - player.w;
+                if(player.y > height - 40 - player.h) player.y = height - 40 - player.h;
 
                 // Particle Emitters
                 let pColor = null;
@@ -490,8 +476,9 @@
                 player.frame = 0;
             }
 
+            // Pet Follow Logic
             let dist = Math.hypot(player.x - pet.x, player.y - pet.y);
-            if (dist > 60) {
+            if (dist > 70) { // Increased follow distance since player is bigger
                 pet.x += (player.x - pet.x) * 0.05;
                 pet.y += (player.y - pet.y) * 0.05;
             }
@@ -507,18 +494,14 @@
         function draw() {
             const pat = ctx.createPattern(images.ground, "repeat");
             ctx.fillStyle = pat;
-            // Draw background only in map area
-            ctx.fillRect(mapMinX, mapMinY, mapMaxX - mapMinX, mapMaxY - mapMinY);
+            ctx.fillRect(0, 0, width, height);
 
             drawFence();
             ctx.drawImage(images.shop, shopDoor.x, shopDoor.y, shopDoor.w, shopDoor.h);
             
             grasses.forEach(g => {
-                // Only draw grass if inside map
-                if(g.x > mapMinX && g.x < mapMaxX && g.y > mapMinY && g.y < mapMaxY) {
-                    let img = images['grass' + g.type];
-                    ctx.drawImage(img, g.x, g.y, 32, 32);
-                }
+                let img = images['grass' + g.type];
+                ctx.drawImage(img, g.x, g.y, 32, 32);
             });
 
             // Player Drawing
@@ -530,37 +513,42 @@
             ctx.translate(player.x + player.w/2, player.y + player.h/2);
             ctx.scale(player.dir, 1); 
             
-            // Ghost Effect
             if (userData.activeItems.includes('ghost')) ctx.globalAlpha = 0.5;
-            // Shadow Mode
             if (userData.activeItems.includes('shadow')) ctx.filter = 'brightness(0%)';
 
             ctx.drawImage(pImg, -player.w/2, -player.h/2, player.w, player.h);
-            ctx.filter = 'none'; // Reset filter
+            ctx.filter = 'none';
             
-            // COSMETIC OVERLAYS (Emojis)
-            ctx.font = "20px Arial";
+            // PLAYER COSMETICS
+            ctx.font = "24px Arial";
             ctx.textAlign = "center";
             
+            // Adjust emoji position for bigger player
             if (userData.activeItems.includes('crown')) ctx.fillText("👑", 0, -player.h/2 - 5);
-            if (userData.activeItems.includes('glasses')) ctx.fillText("🕶️", 2, -player.h/2 + 15);
+            if (userData.activeItems.includes('glasses')) ctx.fillText("🕶️", 5, -player.h/2 + 25);
             if (userData.activeItems.includes('bunny')) ctx.fillText("🐰", 0, -player.h/2 - 5);
-            if (userData.activeItems.includes('bowtie')) ctx.fillText("🎀", 0, player.h/2);
-            if (userData.activeItems.includes('balloon')) ctx.fillText("🎈", -15, -player.h);
+            if (userData.activeItems.includes('bowtie')) ctx.fillText("🎀", 0, player.h/2 - 10);
+            if (userData.activeItems.includes('balloon')) ctx.fillText("🎈", -20, -player.h);
 
             ctx.globalAlpha = 1.0; 
             ctx.restore();
 
-            // Pet
+            // PET DRAWING
             let petImg = (pet.frame === 0) ? images.pet_fly1 : images.pet_fly2;
-            ctx.drawImage(petImg, pet.x, pet.y - 10 * Math.sin(Date.now()/500), pet.w, pet.h);
+            let floatY = pet.y - 10 * Math.sin(Date.now()/500);
+            ctx.drawImage(petImg, pet.x, floatY, pet.w, pet.h);
+
+            // PET COSMETICS
+            ctx.font = "20px Arial";
+            if (userData.activeItems.includes('pet_hat')) ctx.fillText("🎩", pet.x + pet.w/2, floatY - 5);
+            if (userData.activeItems.includes('pet_bow')) ctx.fillText("🎀", pet.x + pet.w/2, floatY + pet.h);
+            if (userData.activeItems.includes('pet_shades')) ctx.fillText("🕶️", pet.x + pet.w/2, floatY + 15);
 
             // Particles
             particles.forEach(p => {
                 ctx.globalAlpha = p.life / 20;
                 if(p.color === 'blue') ctx.drawImage(images.water, p.x, p.y, 16, 16);
                 else {
-                    // Draw colored square/circle for other effects
                     ctx.fillStyle = p.color;
                     ctx.beginPath();
                     ctx.arc(p.x, p.y, 5, 0, Math.PI*2);
@@ -571,22 +559,19 @@
         }
 
         function drawFence() {
-            // Top Fence
-            for(let x = mapMinX; x < mapMaxX; x += TILE_SIZE) {
-                ctx.drawImage(images.fence, x, mapMinY - TILE_SIZE, TILE_SIZE, TILE_SIZE); // Top
-                if((x/TILE_SIZE) % 3 === 0) ctx.drawImage(images.torch, x, mapMinY - TILE_SIZE - 10, 30, 50);
+            const cols = Math.ceil(width / TILE_SIZE);
+            const rows = Math.ceil(height / TILE_SIZE);
+            
+            // Top & Bottom
+            for(let i=0; i<cols; i++) {
+                ctx.drawImage(images.fence, i*TILE_SIZE, 0, TILE_SIZE, TILE_SIZE);
+                ctx.drawImage(images.fence, i*TILE_SIZE, height-TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                if(i % 5 === 0) ctx.drawImage(images.torch, i*TILE_SIZE, -10, 30, 50);
             }
-            // Bottom Fence
-            for(let x = mapMinX; x < mapMaxX; x += TILE_SIZE) {
-                ctx.drawImage(images.fence, x, mapMaxY, TILE_SIZE, TILE_SIZE);
-            }
-            // Left Fence
-            for(let y = mapMinY; y < mapMaxY; y += TILE_SIZE) {
-                ctx.drawImage(images.fence, mapMinX - TILE_SIZE, y, TILE_SIZE, TILE_SIZE);
-            }
-            // Right Fence
-            for(let y = mapMinY; y < mapMaxY; y += TILE_SIZE) {
-                ctx.drawImage(images.fence, mapMaxX, y, TILE_SIZE, TILE_SIZE);
+            // Left & Right
+            for(let i=0; i<rows; i++) {
+                ctx.drawImage(images.fence, 0, i*TILE_SIZE, TILE_SIZE, TILE_SIZE);
+                ctx.drawImage(images.fence, width-TILE_SIZE, i*TILE_SIZE, TILE_SIZE, TILE_SIZE);
             }
         }
 
@@ -607,25 +592,27 @@
             document.getElementById('coin-count').innerText = userData.coins;
         }
 
-        // --- SHOP SYSTEM (14 ITEMS) ---
+        // --- SHOP SYSTEM (Extended) ---
         const allItems = [
-            // Effects
+            // Player Effects
             { id: 'sparkle', name: 'Water Trail', cost: 100, emoji: '💧' },
             { id: 'fire', name: 'Fire Trail', cost: 150, emoji: '🔥' },
             { id: 'snow', name: 'Snow Trail', cost: 150, emoji: '❄️' },
             { id: 'rainbow', name: 'Rainbow Trail', cost: 300, emoji: '🌈' },
-            // Stat Mods
+            // Player Stat Mods
             { id: 'big_pet', name: 'Growth Potion', cost: 250, emoji: '🧪' },
             { id: 'speed_boots', name: 'Speed Boots', cost: 300, emoji: '👟' },
             { id: 'ghost', name: 'Ghost Spirit', cost: 500, emoji: '👻' },
             { id: 'shadow', name: 'Shadow Mode', cost: 600, emoji: '🌑' },
-            // Cosmetics
+            // Player Cosmetics
             { id: 'crown', name: 'Gold Crown', cost: 1000, emoji: '👑' },
             { id: 'glasses', name: 'Cool Shades', cost: 200, emoji: '🕶️' },
             { id: 'bunny', name: 'Bunny Ears', cost: 350, emoji: '🐰' },
             { id: 'bowtie', name: 'Bow Tie', cost: 150, emoji: '🎀' },
-            { id: 'balloon', name: 'Red Balloon', cost: 100, emoji: '🎈' },
-            { id: 'shield', name: 'Hero Badge', cost: 400, emoji: '🛡️' }
+            // Pet Cosmetics (NEW)
+            { id: 'pet_hat', name: 'Pet Top Hat', cost: 400, emoji: '🎩' },
+            { id: 'pet_bow', name: 'Pet Bow', cost: 150, emoji: '🎀' },
+            { id: 'pet_shades', name: 'Pet Shades', cost: 300, emoji: '🕶️' }
         ];
 
         function openShop() {
@@ -691,11 +678,18 @@
             document.getElementById('inventory-modal').style.display = 'block';
         };
 
+        // LIMIT: MAX 3 ITEMS
         window.toggleItem = function(id) {
             const idx = userData.activeItems.indexOf(id);
             if (idx > -1) {
-                userData.activeItems.splice(idx, 1); 
+                // Unequip
+                userData.activeItems.splice(idx, 1);
             } else {
+                // Equip (Check Limit)
+                if (userData.activeItems.length >= 3) {
+                    alert("⚠️ Bag Full! You can only equip 3 items.\nUnequip something first.");
+                    return;
+                }
                 userData.activeItems.push(id);
             }
             saveData();
@@ -707,22 +701,15 @@
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
             
-            // Simple visual calendar for the current month
             const today = new Date();
             const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-            const currentMonthStr = today.toDateString().substring(4, 7); // e.g. "Oct"
+            const currentMonthStr = today.toDateString().substring(4, 7); 
 
             for(let i=1; i<=daysInMonth; i++) {
                 const dayDiv = document.createElement('div');
                 dayDiv.className = 'cal-day';
                 dayDiv.innerText = i;
                 
-                // Construct date string to match loginHistory format approx
-                // Note: toDateString() is "Fri Nov 28 2025"
-                // We check if any saved string contains "Nov 28" etc.
-                const checkStr = `${currentMonthStr} ${i < 10 ? '0'+i : i} ${today.getFullYear()}`;
-                
-                // Flexible check (handles 'Nov 8' vs 'Nov 08')
                 const isLogged = userData.loginHistory.some(d => {
                    const dObj = new Date(d);
                    return dObj.getDate() === i && dObj.getMonth() === today.getMonth();
@@ -735,7 +722,7 @@
             document.getElementById('calendar-modal').style.display = 'block';
         };
 
-        // --- QUIZ LOGIC (CONSECUTIVE) ---
+        // --- QUIZ LOGIC ---
         const quizQuestions = [
             { q: "How long should you brush?", a: ["30 seconds", "2 minutes", "5 minutes"], correct: 1 },
             { q: "How often should you floss?", a: ["Once a week", "Every day", "Never"], correct: 1 },
@@ -769,7 +756,6 @@
         };
 
         function loadNextQuestion() {
-            // Check limit again in case loop
             if (userData.quizHistory.answered.length >= 3) {
                 closeModal('quiz-modal');
                 alert("🎉 Daily Quizzes Completed!");
@@ -815,7 +801,6 @@
                     saveData();
                     updateUI();
                     
-                    // AUTO LOAD NEXT QUESTION
                     if (userData.quizHistory.answered.length < 3) {
                         loadNextQuestion();
                     } else {
@@ -827,7 +812,6 @@
             });
         }
 
-        // BRUSHING TIMER
         let brushInterval;
         document.getElementById('brush-btn').addEventListener('click', () => {
             document.getElementById('timer-modal').style.display = 'block';
