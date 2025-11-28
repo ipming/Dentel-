@@ -2,15 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Viewport settings for iPhone: prevents zooming, handles the notch (safe-area) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <!-- iOS Web App Settings -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="DentalPet">
     
-    <!-- Link to Manifest -->
     <link rel="manifest" href="manifest.json">
 
     <title>Dental Pet Adventure</title>
@@ -19,61 +16,50 @@
         * { margin: 0; padding: 0; box-sizing: border-box; touch-action: none; user-select: none; -webkit-user-select: none; }
         body { 
             overflow: hidden; 
-            background-color: #87CEEB; /* Sky Blue */
+            background-color: #87CEEB; 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        /* GAME CONTAINER */
-        #game-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* CANVAS */
+        #game-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
         canvas { display: block; }
 
         /* UI OVERLAY */
         #ui-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; /* Let clicks pass through to canvas */
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
             padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
         }
 
         /* HUD ITEMS */
         .hud-item {
-            position: absolute;
-            background: rgba(0,0,0,0.6);
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 18px;
-            pointer-events: auto;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            position: absolute; background: rgba(0,0,0,0.6); color: white;
+            padding: 8px 15px; border-radius: 20px; font-weight: bold; font-size: 16px;
+            pointer-events: auto; display: flex; align-items: center; gap: 8px;
         }
         #coin-display { top: 20px; left: 20px; border: 2px solid gold; }
-        #shop-btn { 
-            top: 20px; right: 20px; 
-            background: #4CAF50; 
-            cursor: pointer;
-            border: 2px solid #fff;
+        #shop-btn { top: 20px; right: 20px; background: #4CAF50; cursor: pointer; border: 2px solid #fff; }
+        
+        /* TIMER & TIPS */
+        #timer-container {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            text-align: center; width: 300px; pointer-events: none;
         }
-        #shop-btn:active { transform: scale(0.95); }
+        #timer-display {
+            font-size: 24px; font-weight: 900; color: white; 
+            text-shadow: 2px 2px 0 #000; background: rgba(0,0,0,0.3);
+            padding: 5px 15px; border-radius: 10px; display: inline-block;
+        }
+        #tip-display {
+            margin-top: 5px; font-size: 14px; color: #fff; 
+            text-shadow: 1px 1px 2px black; background: rgba(0,0,100,0.4);
+            padding: 5px; border-radius: 5px;
+        }
 
-        /* CONTROLS (Mobile) */
+        /* CONTROLS */
         .control-btn {
-            position: absolute;
-            bottom: 40px;
-            width: 70px; height: 70px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.6);
-            pointer-events: auto;
+            position: absolute; bottom: 40px; width: 70px; height: 70px;
+            background: rgba(255, 255, 255, 0.3); border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.6); pointer-events: auto;
             display: flex; justify-content: center; align-items: center;
             font-size: 30px; color: white;
         }
@@ -82,57 +68,30 @@
         #btn-right { left: 120px; }
         #btn-jump { right: 30px; background: rgba(255, 200, 0, 0.4); }
 
-        /* MODALS (Shop & Daily Login) */
+        /* MODALS */
         .modal {
-            display: none;
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            justify-content: center; align-items: center;
-            pointer-events: auto;
-            z-index: 100;
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); justify-content: center; align-items: center;
+            pointer-events: auto; z-index: 100;
         }
         .modal-content {
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            width: 90%; max-width: 400px;
-            text-align: center;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            position: relative;
+            background: white; padding: 20px; border-radius: 15px;
+            width: 90%; max-width: 400px; text-align: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5); position: relative;
         }
-        .modal h2 { margin-bottom: 15px; color: #333; }
-        .close-btn {
-            position: absolute; top: 10px; right: 15px;
-            font-size: 24px; cursor: pointer; color: #888;
+        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #888; }
+        .action-btn {
+            background: #4CAF50; color: white; border: none; margin-top: 10px;
+            padding: 10px 20px; border-radius: 5px; font-size: 16px; cursor: pointer; width: 100%;
         }
         
-        /* Shop Grid */
-        .shop-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
+        /* QUIZ STYLES */
+        .quiz-option {
+            background: #eee; margin: 5px 0; padding: 10px; border-radius: 5px; cursor: pointer; border: 2px solid transparent;
         }
-        .shop-item {
-            background: #f0f0f0;
-            padding: 10px;
-            border-radius: 10px;
-            cursor: pointer;
-            border: 2px solid transparent;
-        }
-        .shop-item.selected { border-color: #4CAF50; background: #e8f5e9; }
-        .shop-item img { width: 50px; height: 50px; object-fit: contain; }
-        .buy-btn {
-            background: #4CAF50; color: white; border: none;
-            padding: 10px 20px; border-radius: 5px; font-size: 16px; cursor: pointer;
-            width: 100%;
-        }
-        .buy-btn:disabled { background: #ccc; }
-
-        /* Daily Login Specifics */
-        #daily-reward-amt { font-size: 40px; color: gold; display: block; margin: 20px 0; text-shadow: 1px 1px 0 #000; }
-        #claim-btn { background: gold; color: #8B4513; font-weight: bold; }
+        .quiz-option:active { background: #ddd; }
+        .quiz-correct { background: #d4edda; border-color: #28a745; }
+        .quiz-wrong { background: #f8d7da; border-color: #dc3545; }
 
     </style>
 </head>
@@ -143,10 +102,14 @@
 
     <div id="ui-layer">
         <!-- HUD -->
-        <div id="coin-display">
-            <span style="color: gold;">●</span> <span id="coin-count">0</span>
-        </div>
+        <div id="coin-display"><span style="color: gold;">●</span> <span id="coin-count">0</span></div>
         <div id="shop-btn" class="hud-item">🛒 Shop</div>
+
+        <!-- Timer & Tips -->
+        <div id="timer-container">
+            <div id="timer-display">02:00</div>
+            <div id="tip-display">Brush in circles!</div>
+        </div>
 
         <!-- Controls -->
         <div id="btn-left" class="control-btn">←</div>
@@ -157,31 +120,10 @@
     <!-- SHOP MODAL -->
     <div id="shop-modal" class="modal">
         <div class="modal-content">
-            <span class="close-btn" onclick="toggleShop()">×</span>
+            <span class="close-btn" onclick="toggleModal('shop-modal')">×</span>
             <h2>Pet Shop</h2>
-            <div class="shop-grid">
-                <div class="shop-item" onclick="selectItem('hat')">
-                    <div style="font-size:30px">🎩</div>
-                    <p>Top Hat</p>
-                    <p>50 Coins</p>
-                </div>
-                <div class="shop-item" onclick="selectItem('glasses')">
-                    <div style="font-size:30px">👓</div>
-                    <p>Glasses</p>
-                    <p>30 Coins</p>
-                </div>
-                <div class="shop-item" onclick="selectItem('bowtie')">
-                    <div style="font-size:30px">🎀</div>
-                    <p>Bowtie</p>
-                    <p>40 Coins</p>
-                </div>
-                <div class="shop-item" onclick="selectItem('crown')">
-                    <div style="font-size:30px">👑</div>
-                    <p>Crown</p>
-                    <p>100 Coins</p>
-                </div>
-            </div>
-            <button id="buy-button" class="buy-btn" onclick="buyItem()">Select an item</button>
+            <p>Spend your coins here!</p>
+            <button class="action-btn" onclick="toggleModal('shop-modal')">Close</button>
         </div>
     </div>
 
@@ -189,52 +131,41 @@
     <div id="daily-modal" class="modal">
         <div class="modal-content">
             <h2>Daily Bonus!</h2>
-            <p>Welcome back!</p>
-            <span id="daily-reward-amt">+50</span>
-            <p>Coins added to your wallet.</p>
-            <br>
-            <button id="claim-btn" class="buy-btn" onclick="claimDaily()">Claim Reward!</button>
+            <h1 style="color:gold; font-size: 40px;">+50</h1>
+            <p>Coins added!</p>
+            <button class="action-btn" onclick="claimDaily()">Awesome!</button>
+        </div>
+    </div>
+
+    <!-- QUIZ MODAL -->
+    <div id="quiz-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="toggleModal('quiz-modal')">×</span>
+            <h3 id="quiz-question">Question here?</h3>
+            <div id="quiz-options"></div>
+            <p id="quiz-feedback" style="margin-top:10px; font-weight:bold;"></p>
         </div>
     </div>
 </div>
 
 <script>
-    // --- ASSET LOADER ---
+    // --- ASSET LOADER (Placeholders) ---
     const assets = {};
+    // Using colored rectangles if images fail, but you should add images to an 'assets' folder
     const imageSources = {
-        chest: 'assets/chest.png',
         coin: 'assets/coin.png',
-        char_idle: 'assets/char_idle.png',
-        char_jump: 'assets/char_jump.png',
-        char_walk1: 'assets/char_walk1.png',
-        char_walk2: 'assets/char_walk2.png',
-        pet_idle: 'assets/pet_idle.png',
-        pet_fly1: 'assets/pet_fly1.png',
-        pet_fly2: 'assets/pet_fly2.png',
-        ground: 'assets/ground_tile.png',
-        grass: 'assets/grass_tuft.png',
-        fence: 'assets/fence.png',
-        torch: 'assets/torch.png',
-        shop: 'assets/shop_door.png'
+        char: 'assets/char.png',
+        pet: 'assets/pet.png'
     };
-
-    let assetsLoaded = 0;
-    const totalAssets = Object.keys(imageSources).length;
-
+    
     function loadAssets(callback) {
+        let loaded = 0;
+        const total = Object.keys(imageSources).length;
         for (let key in imageSources) {
             assets[key] = new Image();
             assets[key].src = imageSources[key];
-            assets[key].onload = () => {
-                assetsLoaded++;
-                if (assetsLoaded === totalAssets) callback();
-            };
-            // Fallback for missing images (draws colored rects)
-            assets[key].onerror = () => {
-                assetsLoaded++;
-                console.warn(`Failed to load ${key}`);
-                if (assetsLoaded === totalAssets) callback();
-            };
+            assets[key].onload = () => { if(++loaded >= total) callback(); };
+            assets[key].onerror = () => { if(++loaded >= total) callback(); };
         }
     }
 
@@ -242,18 +173,13 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     
-    // Game State
     let coins = parseInt(localStorage.getItem('dentalCoins')) || 0;
-    let inventory = JSON.parse(localStorage.getItem('dentalInventory')) || [];
-    
-    // Update Coin UI immediately
     document.getElementById('coin-count').innerText = coins;
 
     // Physics
-    const GRAVITY = 0.6;
-    const FRICTION = 0.8;
-    const JUMP_FORCE = -12;
-    const SPEED = 5;
+    const GRAVITY = 0.8;
+    const JUMP_FORCE = -14;
+    const SPEED = 6; // Faster movement
 
     // Camera
     let cameraX = 0;
@@ -261,149 +187,338 @@
     // Input
     const keys = { left: false, right: false, up: false };
 
-    // Game Objects
+    // Player
     const player = {
-        x: 100, y: 0, width: 50, height: 80,
+        x: 100, y: 0, width: 40, height: 60,
         vx: 0, vy: 0,
         grounded: false,
-        facingRight: true,
-        animTimer: 0,
-        frame: 0
+        color: '#FF5722'
     };
 
+    // Pet
     const pet = {
         x: 60, y: 0, width: 30, height: 30,
+        vx: 0, vy: 0,
         targetX: 0, targetY: 0,
-        animTimer: 0,
-        floatOffset: 0
+        state: 'FOLLOW', // FOLLOW or WANDER
+        wanderTimer: 0,
+        color: '#E91E63'
     };
 
-    // Level Data
-    const groundLevel = 0; // Will be set in resize
+    // World
     const platforms = [];
-    const decorations = [];
     const collectables = [];
+    const groundY = 0; // Set in resize
+
+    // --- TIMER & TIPS ---
+    let timeLeft = 120; // 2 minutes
+    const tips = [
+        "Brush for 2 minutes twice a day!",
+        "Don't forget to floss!",
+        "Brush your tongue to remove bacteria.",
+        "Replace your toothbrush every 3 months.",
+        "Visit the dentist twice a year!",
+        "Limit sugary snacks to protect teeth."
+    ];
+    
+    // --- QUIZ DATA ---
+    const quizQuestions = [
+        { q: "How often should you brush?", options: ["Once a week", "Twice a day", "Never"], a: 1 },
+        { q: "What do you use to clean between teeth?", options: ["Floss", "Paper", "Nothing"], a: 0 },
+        { q: "How long should you brush for?", options: ["10 seconds", "2 minutes", "1 hour"], a: 1 },
+        { q: "What creates cavities?", options: ["Sugar & Bacteria", "Water", "Air"], a: 0 }
+    ];
 
     // --- INITIALIZATION ---
     function init() {
         resize();
         window.addEventListener('resize', resize);
         setupControls();
-        generateLevel();
-        checkDailyLogin(); // Check for daily reward on start
+        
+        // Generate Ground
+        for(let i=0; i<100; i++) {
+            platforms.push({ x: i * 100, y: canvas.height - 60, w: 100, h: 60 });
+        }
+
+        checkDailyLogin();
+        startTimer();
+        
+        // Click listener for Pet Interaction
+        canvas.addEventListener('click', checkPetClick);
+        canvas.addEventListener('touchstart', checkPetClick, {passive: false});
+
         requestAnimationFrame(gameLoop);
     }
 
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-        player.y = canvas.height - 150; // Reset player position to ground
+        player.y = canvas.height - 150;
     }
 
-    function generateLevel() {
-        // Ground
-        for(let i=0; i<50; i++) {
-            platforms.push({ x: i * 100, y: canvas.height - 60, w: 100, h: 60, type: 'ground' });
-            
-            // Random Grass
-            if(Math.random() > 0.5) {
-                decorations.push({ x: i*100 + Math.random()*80, y: canvas.height - 90, type: 'grass' });
+    // --- TIMER SYSTEM ---
+    function startTimer() {
+        setInterval(() => {
+            if(timeLeft > 0) {
+                timeLeft--;
+                let m = Math.floor(timeLeft / 60);
+                let s = timeLeft % 60;
+                document.getElementById('timer-display').innerText = 
+                    `${m < 10 ? '0'+m : m}:${s < 10 ? '0'+s : s}`;
+                
+                // Change tip every 10 seconds
+                if(timeLeft % 10 === 0) {
+                    const randomTip = tips[Math.floor(Math.random() * tips.length)];
+                    document.getElementById('tip-display').innerText = randomTip;
+                }
+            } else {
+                document.getElementById('tip-display').innerText = "Great Brushing!";
             }
-        }
-
-        // Floating Platforms
-        for(let i=1; i<10; i++) {
-            let px = i * 400 + Math.random() * 100;
-            let py = canvas.height - 200 - (Math.random() * 100);
-            platforms.push({ x: px, y: py, w: 150, h: 20, type: 'platform' });
-
-            // Add coins on platforms
-            collectables.push({ x: px + 50, y: py - 40, w: 30, h: 30, type: 'coin', collected: false });
-        }
+        }, 1000);
     }
 
-    // --- DAILY LOGIN SYSTEM ---
+    // --- DAILY LOGIN ---
     function checkDailyLogin() {
-        const lastLoginDate = localStorage.getItem('lastLoginDate');
-        const today = new Date().toDateString(); // Format: "Mon Jan 01 2024"
-
-        if (lastLoginDate !== today) {
-            // It's a new day!
+        const lastLogin = localStorage.getItem('lastLoginDate');
+        const today = new Date().toDateString();
+        if (lastLogin !== today) {
             document.getElementById('daily-modal').style.display = 'flex';
+        }
+        // Reset daily quiz count
+        if (lastLogin !== today) {
+            localStorage.setItem('dailyQuizzes', '0');
         }
     }
 
     function claimDaily() {
-        const reward = 50;
-        coins += reward;
+        coins += 50;
         updateCoins();
-        
-        // Save today as the last login date
         localStorage.setItem('lastLoginDate', new Date().toDateString());
-        
         document.getElementById('daily-modal').style.display = 'none';
     }
 
-    // --- SHOP SYSTEM ---
-    let selectedItemCost = 0;
-    let selectedItemName = "";
-
-    // Toggle Shop Modal
-    document.getElementById('shop-btn').addEventListener('click', toggleShop);
-
-    function toggleShop() {
-        const modal = document.getElementById('shop-modal');
-        modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
-        // Reset selection
-        document.querySelectorAll('.shop-item').forEach(el => el.classList.remove('selected'));
-        document.getElementById('buy-button').innerText = "Select an item";
-        document.getElementById('buy-button').disabled = true;
-    }
-
-    window.selectItem = function(item) {
-        // Visual selection
-        document.querySelectorAll('.shop-item').forEach(el => el.classList.remove('selected'));
-        event.currentTarget.classList.add('selected');
-
-        // Logic
-        selectedItemName = item;
-        if(item === 'hat') selectedItemCost = 50;
-        if(item === 'glasses') selectedItemCost = 30;
-        if(item === 'bowtie') selectedItemCost = 40;
-        if(item === 'crown') selectedItemCost = 100;
-
-        const btn = document.getElementById('buy-button');
-        if (inventory.includes(item)) {
-            btn.innerText = "Already Owned";
-            btn.disabled = true;
-        } else if (coins >= selectedItemCost) {
-            btn.innerText = `Buy for ${selectedItemCost}`;
-            btn.disabled = false;
+    // --- QUIZ INTERACTION ---
+    function checkPetClick(e) {
+        // Get click coordinates relative to canvas
+        const rect = canvas.getBoundingClientRect();
+        let clickX, clickY;
+        
+        if(e.type === 'touchstart') {
+            clickX = e.touches[0].clientX - rect.left;
+            clickY = e.touches[0].clientY - rect.top;
         } else {
-            btn.innerText = "Not enough coins";
-            btn.disabled = true;
+            clickX = e.clientX - rect.left;
+            clickY = e.clientY - rect.top;
+        }
+
+        // Adjust for camera
+        const worldClickX = clickX + cameraX;
+
+        // Simple distance check to Pet
+        const dist = Math.hypot(worldClickX - (pet.x + pet.width/2), clickY - (pet.y + pet.height/2));
+        
+        if(dist < 60) { // If clicked near pet
+            openQuiz();
         }
     }
 
-    window.buyItem = function() {
-        if(coins >= selectedItemCost && !inventory.includes(selectedItemName)) {
-            coins -= selectedItemCost;
-            inventory.push(selectedItemName);
+    function openQuiz() {
+        const quizzesDone = parseInt(localStorage.getItem('dailyQuizzes')) || 0;
+        if(quizzesDone >= 3) {
+            alert("Pet says: You've learned enough for today! Come back tomorrow.");
+            return;
+        }
+
+        const qData = quizQuestions[Math.floor(Math.random() * quizQuestions.length)];
+        document.getElementById('quiz-question').innerText = qData.q;
+        const optContainer = document.getElementById('quiz-options');
+        optContainer.innerHTML = '';
+        document.getElementById('quiz-feedback').innerText = '';
+
+        qData.options.forEach((opt, index) => {
+            const div = document.createElement('div');
+            div.className = 'quiz-option';
+            div.innerText = opt;
+            div.onclick = () => handleQuizAnswer(div, index === qData.a);
+            optContainer.appendChild(div);
+        });
+
+        toggleModal('quiz-modal');
+    }
+
+    function handleQuizAnswer(element, isCorrect) {
+        if(element.classList.contains('quiz-correct') || element.classList.contains('quiz-wrong')) return; // Prevent double click
+
+        if(isCorrect) {
+            element.classList.add('quiz-correct');
+            document.getElementById('quiz-feedback').innerText = "Correct! +20 Coins";
+            document.getElementById('quiz-feedback').style.color = "green";
+            coins += 20;
             updateCoins();
-            localStorage.setItem('dentalInventory', JSON.stringify(inventory));
             
-            alert(`You bought the ${selectedItemName}!`);
-            toggleShop(); // Close shop
+            // Increment daily counter
+            let count = parseInt(localStorage.getItem('dailyQuizzes')) || 0;
+            localStorage.setItem('dailyQuizzes', count + 1);
+            
+            setTimeout(() => toggleModal('quiz-modal'), 1500);
+        } else {
+            element.classList.add('quiz-wrong');
+            document.getElementById('quiz-feedback').innerText = "Oops! Try again.";
+            document.getElementById('quiz-feedback').style.color = "red";
         }
     }
 
-    function updateCoins() {
-        document.getElementById('coin-count').innerText = coins;
-        localStorage.setItem('dentalCoins', coins);
+    // --- CORE LOGIC ---
+    function update() {
+        // 1. MOVEMENT (Velocity Based - Snappier)
+        if (keys.right) player.vx = SPEED;
+        else if (keys.left) player.vx = -SPEED;
+        else player.vx = 0; // Stop immediately when no key pressed
+
+        player.vy += GRAVITY;
+        player.x += player.vx;
+        player.y += player.vy;
+
+        // 2. COLLISION
+        player.grounded = false;
+        platforms.forEach(plat => {
+            if (player.x + player.width > plat.x && 
+                player.x < plat.x + plat.w &&
+                player.y + player.height > plat.y &&
+                player.y + player.height < plat.y + plat.h + 20 &&
+                player.vy >= 0) {
+                    player.y = plat.y - player.height;
+                    player.vy = 0;
+                    player.grounded = true;
+            }
+        });
+
+        // Keep player in bounds (left side)
+        if(player.x < 0) player.x = 0;
+
+        // 3. RANDOM COIN SPAWNING
+        // 1% chance per frame to spawn a coin ahead of the player
+        if(Math.random() < 0.01) {
+            const spawnX = player.x + 400 + Math.random() * 400; // Spawn ahead
+            const spawnY = canvas.height - 100 - Math.random() * 150; // Random height
+            collectables.push({ x: spawnX, y: spawnY, w: 30, h: 30, collected: false });
+        }
+
+        // Coin Collection
+        collectables.forEach(c => {
+            if (!c.collected &&
+                player.x < c.x + c.w &&
+                player.x + player.width > c.x &&
+                player.y < c.y + c.h &&
+                player.y + player.height > c.y) {
+                    c.collected = true;
+                    coins += 10;
+                    updateCoins();
+            }
+        });
+
+        // 4. PET AI (Wander & Follow)
+        pet.wanderTimer++;
+        
+        // State Machine
+        if(pet.state === 'FOLLOW') {
+            // Target: slightly behind/above player
+            const targetX = player.x + (player.vx >= 0 ? -40 : 60);
+            const targetY = player.y - 20;
+            
+            // Smooth lerp
+            pet.x += (targetX - pet.x) * 0.05;
+            pet.y += (targetY - pet.y) * 0.05;
+
+            // Randomly switch to WANDER
+            if(Math.random() < 0.005) {
+                pet.state = 'WANDER';
+                pet.wanderTimer = 0;
+                // Pick a random spot on screen relative to player
+                pet.targetX = player.x + (Math.random() * 400 - 200);
+                pet.targetY = player.y - (Math.random() * 150 + 50); 
+            }
+        } 
+        else if (pet.state === 'WANDER') {
+            // Move towards random target
+            pet.x += (pet.targetX - pet.x) * 0.02;
+            pet.y += (pet.targetY - pet.y) * 0.02;
+
+            // Switch back to FOLLOW after 3 seconds (approx 180 frames)
+            if(pet.wanderTimer > 180) {
+                pet.state = 'FOLLOW';
+            }
+        }
+
+        // Camera Follow
+        cameraX = player.x - canvas.width / 2 + player.width / 2;
+        if(cameraX < 0) cameraX = 0;
     }
 
+    function draw() {
+        ctx.fillStyle = '#87CEEB';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // --- INPUT HANDLING ---
+        ctx.save();
+        ctx.translate(-cameraX, 0);
+
+        // Draw Ground
+        ctx.fillStyle = '#654321';
+        platforms.forEach(p => {
+            ctx.fillRect(p.x, p.y, p.w, p.h);
+            ctx.fillStyle = '#4CAF50'; // Grass top
+            ctx.fillRect(p.x, p.y, p.w, 10);
+            ctx.fillStyle = '#654321'; // Reset for next
+        });
+
+        // Draw Coins
+        collectables.forEach(c => {
+            if(!c.collected) {
+                ctx.fillStyle = 'gold';
+                ctx.beginPath();
+                ctx.arc(c.x + c.w/2, c.y + c.h/2, c.w/2, 0, Math.PI*2);
+                ctx.fill();
+                ctx.strokeStyle = 'orange';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        });
+
+        // Draw Player
+        ctx.fillStyle = player.color;
+        ctx.fillRect(player.x, player.y, player.width, player.height);
+        // Eyes
+        ctx.fillStyle = 'white';
+        ctx.fillRect(player.x + (player.vx < 0 ? 5 : 25), player.y + 10, 10, 10);
+
+        // Draw Pet
+        ctx.fillStyle = pet.color;
+        ctx.beginPath();
+        ctx.arc(pet.x + pet.width/2, pet.y + pet.height/2, pet.width/2, 0, Math.PI*2);
+        ctx.fill();
+        // Pet Wings (flapping)
+        ctx.fillStyle = 'white';
+        let flap = Math.sin(Date.now() / 100) * 10;
+        ctx.fillRect(pet.x - 10, pet.y + 10 + flap, 10, 5);
+        ctx.fillRect(pet.x + 30, pet.y + 10 + flap, 10, 5);
+
+        // Draw "Click Me" hint above pet occasionally
+        if(Math.floor(Date.now() / 1000) % 4 === 0) {
+            ctx.fillStyle = 'white';
+            ctx.font = '12px Arial';
+            ctx.fillText("?", pet.x + 10, pet.y - 10);
+        }
+
+        ctx.restore();
+    }
+
+    function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    // --- UTILS ---
     function setupControls() {
         // Keyboard
         window.addEventListener('keydown', e => {
@@ -437,156 +552,17 @@
         });
     }
 
-    // --- GAME LOGIC ---
-    function update() {
-        // Player Movement
-        if (keys.right) { player.vx += 1; player.facingRight = true; }
-        if (keys.left) { player.vx -= 1; player.facingRight = false; }
-
-        player.vx *= FRICTION;
-        player.vy += GRAVITY;
-
-        player.x += player.vx;
-        player.y += player.vy;
-
-        // Collision Detection
-        player.grounded = false;
-        
-        // Ground/Platform Collision
-        platforms.forEach(plat => {
-            if (player.x + player.width > plat.x && 
-                player.x < plat.x + plat.w &&
-                player.y + player.height > plat.y &&
-                player.y + player.height < plat.y + plat.h + 20 && // Tolerance
-                player.vy >= 0) {
-                    player.y = plat.y - player.height;
-                    player.vy = 0;
-                    player.grounded = true;
-            }
-        });
-
-        // Coin Collection
-        collectables.forEach(c => {
-            if (!c.collected &&
-                player.x < c.x + c.w &&
-                player.x + player.width > c.x &&
-                player.y < c.y + c.h &&
-                player.y + player.height > c.y) {
-                    c.collected = true;
-                    coins += 10;
-                    updateCoins();
-            }
-        });
-
-        // Pet Follow Logic
-        const targetX = player.facingRight ? player.x - 40 : player.x + 60;
-        const targetY = player.y + 10;
-        
-        pet.x += (targetX - pet.x) * 0.05;
-        pet.y += (targetY - pet.y) * 0.05;
-        
-        // Pet Float Animation
-        pet.floatOffset = Math.sin(Date.now() / 300) * 5;
-
-        // Camera Follow
-        cameraX = player.x - canvas.width / 2 + player.width / 2;
-        // Limit camera so it doesn't show negative space
-        if(cameraX < 0) cameraX = 0;
+    function updateCoins() {
+        document.getElementById('coin-count').innerText = coins;
+        localStorage.setItem('dentalCoins', coins);
     }
 
-    // --- RENDERING ---
-    function draw() {
-        // Clear Screen
-        ctx.fillStyle = '#87CEEB';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        ctx.save();
-        ctx.translate(-cameraX, 0);
-
-        // Draw Decor (Background)
-        decorations.forEach(d => {
-            if(assets.grass.complete) ctx.drawImage(assets.grass, d.x, d.y, 40, 30);
-        });
-
-        // Draw Platforms
-        platforms.forEach(p => {
-            if(p.type === 'ground') {
-                if(assets.ground.complete) {
-                    // Tiling ground
-                    ctx.drawImage(assets.ground, p.x, p.y, p.w, p.h);
-                } else {
-                    ctx.fillStyle = '#654321';
-                    ctx.fillRect(p.x, p.y, p.w, p.h);
-                }
-            } else {
-                ctx.fillStyle = '#8B4513';
-                ctx.fillRect(p.x, p.y, p.w, p.h);
-                // Grass top on platform
-                ctx.fillStyle = '#4CAF50';
-                ctx.fillRect(p.x, p.y, p.w, 10);
-            }
-        });
-
-        // Draw Coins
-        collectables.forEach(c => {
-            if(!c.collected) {
-                if(assets.coin.complete) {
-                    ctx.drawImage(assets.coin, c.x, c.y, c.w, c.h);
-                } else {
-                    ctx.fillStyle = 'gold';
-                    ctx.beginPath();
-                    ctx.arc(c.x + c.w/2, c.y + c.h/2, c.w/2, 0, Math.PI*2);
-                    ctx.fill();
-                }
-            }
-        });
-
-        // Draw Player
-        let charImg = assets.char_idle;
-        if(!player.grounded) charImg = assets.char_jump;
-        else if(Math.abs(player.vx) > 0.5) {
-            // Simple walk cycle
-            player.animTimer++;
-            if(Math.floor(player.animTimer / 10) % 2 === 0) charImg = assets.char_walk1;
-            else charImg = assets.char_walk2;
-        }
-
-        ctx.save();
-        if(!player.facingRight) {
-            ctx.translate(player.x + player.width, player.y);
-            ctx.scale(-1, 1);
-            if(charImg.complete) ctx.drawImage(charImg, 0, 0, player.width, player.height);
-            else { ctx.fillStyle = 'red'; ctx.fillRect(0,0,player.width, player.height); }
-        } else {
-            if(charImg.complete) ctx.drawImage(charImg, player.x, player.y, player.width, player.height);
-            else { ctx.fillStyle = 'red'; ctx.fillRect(player.x,player.y,player.width, player.height); }
-        }
-        ctx.restore();
-
-        // Draw Pet
-        let petImg = assets.pet_idle;
-        if(Math.abs(player.vx) > 0.5) {
-             if(Math.floor(Date.now() / 200) % 2 === 0) petImg = assets.pet_fly1;
-             else petImg = assets.pet_fly2;
-        }
-
-        if(petImg.complete) {
-            ctx.drawImage(petImg, pet.x, pet.y + pet.floatOffset, pet.width, pet.height);
-        } else {
-            ctx.fillStyle = 'white';
-            ctx.fillRect(pet.x, pet.y, pet.width, pet.height);
-        }
-
-        ctx.restore();
+    window.toggleModal = function(id) {
+        const el = document.getElementById(id);
+        el.style.display = el.style.display === 'flex' ? 'none' : 'flex';
     }
 
-    function gameLoop() {
-        update();
-        draw();
-        requestAnimationFrame(gameLoop);
-    }
-
-    // Start Game
+    // Start
     loadAssets(init);
 
 </script>
