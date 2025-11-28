@@ -42,7 +42,7 @@
         /* TIMER & TIPS */
         #timer-container {
             position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            text-align: center; width: 300px; pointer-events: none;
+            text-align: center; width: 300px; pointer-events: auto; /* Allow clicking start button */
         }
         #timer-display {
             font-size: 24px; font-weight: 900; color: white; 
@@ -52,7 +52,13 @@
         #tip-display {
             margin-top: 5px; font-size: 14px; color: #fff; 
             text-shadow: 1px 1px 2px black; background: rgba(0,0,100,0.4);
-            padding: 5px; border-radius: 5px;
+            padding: 5px; border-radius: 5px; display: none; /* Hidden until start */
+        }
+        #start-timer-btn {
+            margin-top: 5px;
+            background: #FF9800; color: white; border: 2px solid white;
+            padding: 5px 15px; border-radius: 15px; font-weight: bold;
+            cursor: pointer; pointer-events: auto;
         }
 
         /* CONTROLS */
@@ -102,12 +108,16 @@
 
     <div id="ui-layer">
         <!-- HUD -->
-        <div id="coin-display"><span style="color: gold;">●</span> <span id="coin-count">0</span></div>
+        <div id="coin-display">
+            <!-- Using an img tag for HUD coin is optional, but let's keep simple text/css for HUD -->
+            <span style="color: gold;">●</span> <span id="coin-count">0</span>
+        </div>
         <div id="shop-btn" class="hud-item">🛒 Shop</div>
 
         <!-- Timer & Tips -->
         <div id="timer-container">
             <div id="timer-display">02:00</div>
+            <button id="start-timer-btn" onclick="startBrushingTimer()">Start Brushing</button>
             <div id="tip-display">Brush in circles!</div>
         </div>
 
@@ -149,13 +159,31 @@
 </div>
 
 <script>
-    // --- ASSET LOADER (Placeholders) ---
+    // --- ASSET LOADER ---
     const assets = {};
-    // Using colored rectangles if images fail, but you should add images to an 'assets' folder
+    // Mapping your screenshot filenames to keys
     const imageSources = {
+        // Character
+        char_idle: 'assets/char_idle.png',
+        char_jump: 'assets/char_jump.png',
+        char_walk1: 'assets/char_walk1.png',
+        char_walk2: 'assets/char_walk2.png',
+        
+        // Pet (Bee)
+        pet_idle: 'assets/pet_idle.png',
+        pet_fly1: 'assets/pet_fly1.png',
+        pet_fly2: 'assets/pet_fly2.png',
+        
+        // Environment
+        ground: 'assets/ground_tile.png',
+        bush: 'assets/bush.png',
+        grass: 'assets/grass_tuft.png',
+        fence: 'assets/fence.png',
+        shop_door: 'assets/shop_door.png',
+        chest: 'assets/chest.png',
         coin: 'assets/coin.png',
-        char: 'assets/char.png',
-        pet: 'assets/pet.png'
+        torch: 'assets/torch.png',
+        water: 'assets/water.png'
     };
     
     function loadAssets(callback) {
@@ -165,7 +193,10 @@
             assets[key] = new Image();
             assets[key].src = imageSources[key];
             assets[key].onload = () => { if(++loaded >= total) callback(); };
-            assets[key].onerror = () => { if(++loaded >= total) callback(); };
+            assets[key].onerror = () => { 
+                console.error("Failed to load " + key);
+                if(++loaded >= total) callback(); 
+            };
         }
     }
 
@@ -179,7 +210,7 @@
     // Physics
     const GRAVITY = 0.8;
     const JUMP_FORCE = -14;
-    const SPEED = 6; // Faster movement
+    const SPEED = 6; 
 
     // Camera
     let cameraX = 0;
@@ -189,29 +220,36 @@
 
     // Player
     const player = {
-        x: 100, y: 0, width: 40, height: 60,
+        x: 100, y: 0, width: 50, height: 50, // Adjusted for sprite
         vx: 0, vy: 0,
         grounded: false,
-        color: '#FF5722'
+        facingRight: true,
+        animTimer: 0,
+        frame: 0
     };
 
     // Pet
     const pet = {
-        x: 60, y: 0, width: 30, height: 30,
+        x: 60, y: 0, width: 40, height: 40,
         vx: 0, vy: 0,
         targetX: 0, targetY: 0,
-        state: 'FOLLOW', // FOLLOW or WANDER
+        state: 'FOLLOW', 
         wanderTimer: 0,
-        color: '#E91E63'
+        animTimer: 0,
+        frame: 0,
+        facingRight: true
     };
 
     // World
     const platforms = [];
+    const decorations = []; // Bushes, fences, etc.
     const collectables = [];
-    const groundY = 0; // Set in resize
+    const groundY = 0; 
 
     // --- TIMER & TIPS ---
-    let timeLeft = 120; // 2 minutes
+    let timeLeft = 120; 
+    let timerRunning = false;
+    let timerInterval;
     const tips = [
         "Brush for 2 minutes twice a day!",
         "Don't forget to floss!",
@@ -235,13 +273,10 @@
         window.addEventListener('resize', resize);
         setupControls();
         
-        // Generate Ground
-        for(let i=0; i<100; i++) {
-            platforms.push({ x: i * 100, y: canvas.height - 60, w: 100, h: 60 });
-        }
+        // Generate World
+        generateWorld();
 
         checkDailyLogin();
-        startTimer();
         
         // Click listener for Pet Interaction
         canvas.addEventListener('click', checkPetClick);
@@ -250,15 +285,52 @@
         requestAnimationFrame(gameLoop);
     }
 
+    function generateWorld() {
+        // Create ground tiles
+        for(let i=0; i<100; i++) {
+            platforms.push({ x: i * 64, y: canvas.height - 64, w: 64, h: 64 });
+            
+            // Random Decorations
+            if(i > 3 && Math.random() < 0.2) {
+                let type = Math.random();
+                if(type < 0.3) decorations.push({img: 'bush', x: i*64, y: canvas.height - 64 - 40, w: 50, h: 40});
+                else if(type < 0.6) decorations.push({img: 'grass', x: i*64 + 10, y: canvas.height - 64 - 20, w: 30, h: 20});
+                else if(type < 0.8) decorations.push({img: 'fence', x: i*64, y: canvas.height - 64 - 40, w: 64, h: 40});
+            }
+
+            // Shop Door at start
+            if(i === 2) {
+                decorations.push({img: 'shop_door', x: i*64, y: canvas.height - 64 - 80, w: 60, h: 80});
+            }
+        }
+    }
+
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         player.y = canvas.height - 150;
+        // Regenerate ground y positions on resize
+        platforms.forEach(p => p.y = canvas.height - 64);
+        decorations.forEach(d => {
+             // Simple readjustment based on image type
+             if(d.img === 'shop_door') d.y = canvas.height - 64 - 80;
+             else if(d.img === 'bush' || d.img === 'fence') d.y = canvas.height - 64 - 40;
+             else if(d.img === 'grass') d.y = canvas.height - 64 - 20;
+        });
     }
 
     // --- TIMER SYSTEM ---
-    function startTimer() {
-        setInterval(() => {
+    function startBrushingTimer() {
+        if(timerRunning) return;
+        
+        timerRunning = true;
+        document.getElementById('start-timer-btn').style.display = 'none';
+        document.getElementById('tip-display').style.display = 'block';
+        
+        // Initial tip
+        document.getElementById('tip-display').innerText = tips[0];
+
+        timerInterval = setInterval(() => {
             if(timeLeft > 0) {
                 timeLeft--;
                 let m = Math.floor(timeLeft / 60);
@@ -272,7 +344,10 @@
                     document.getElementById('tip-display').innerText = randomTip;
                 }
             } else {
-                document.getElementById('tip-display').innerText = "Great Brushing!";
+                clearInterval(timerInterval);
+                document.getElementById('tip-display').innerText = "Great Brushing! +100 Coins";
+                coins += 100;
+                updateCoins();
             }
         }, 1000);
     }
@@ -284,7 +359,6 @@
         if (lastLogin !== today) {
             document.getElementById('daily-modal').style.display = 'flex';
         }
-        // Reset daily quiz count
         if (lastLogin !== today) {
             localStorage.setItem('dailyQuizzes', '0');
         }
@@ -299,7 +373,6 @@
 
     // --- QUIZ INTERACTION ---
     function checkPetClick(e) {
-        // Get click coordinates relative to canvas
         const rect = canvas.getBoundingClientRect();
         let clickX, clickY;
         
@@ -311,13 +384,10 @@
             clickY = e.clientY - rect.top;
         }
 
-        // Adjust for camera
         const worldClickX = clickX + cameraX;
-
-        // Simple distance check to Pet
         const dist = Math.hypot(worldClickX - (pet.x + pet.width/2), clickY - (pet.y + pet.height/2));
         
-        if(dist < 60) { // If clicked near pet
+        if(dist < 70) { 
             openQuiz();
         }
     }
@@ -347,7 +417,7 @@
     }
 
     function handleQuizAnswer(element, isCorrect) {
-        if(element.classList.contains('quiz-correct') || element.classList.contains('quiz-wrong')) return; // Prevent double click
+        if(element.classList.contains('quiz-correct') || element.classList.contains('quiz-wrong')) return; 
 
         if(isCorrect) {
             element.classList.add('quiz-correct');
@@ -356,7 +426,6 @@
             coins += 20;
             updateCoins();
             
-            // Increment daily counter
             let count = parseInt(localStorage.getItem('dailyQuizzes')) || 0;
             localStorage.setItem('dailyQuizzes', count + 1);
             
@@ -370,10 +439,10 @@
 
     // --- CORE LOGIC ---
     function update() {
-        // 1. MOVEMENT (Velocity Based - Snappier)
-        if (keys.right) player.vx = SPEED;
-        else if (keys.left) player.vx = -SPEED;
-        else player.vx = 0; // Stop immediately when no key pressed
+        // 1. MOVEMENT
+        if (keys.right) { player.vx = SPEED; player.facingRight = true; }
+        else if (keys.left) { player.vx = -SPEED; player.facingRight = false; }
+        else player.vx = 0;
 
         player.vy += GRAVITY;
         player.x += player.vx;
@@ -393,18 +462,15 @@
             }
         });
 
-        // Keep player in bounds (left side)
         if(player.x < 0) player.x = 0;
 
         // 3. RANDOM COIN SPAWNING
-        // 1% chance per frame to spawn a coin ahead of the player
         if(Math.random() < 0.01) {
-            const spawnX = player.x + 400 + Math.random() * 400; // Spawn ahead
-            const spawnY = canvas.height - 100 - Math.random() * 150; // Random height
-            collectables.push({ x: spawnX, y: spawnY, w: 30, h: 30, collected: false });
+            const spawnX = player.x + 400 + Math.random() * 400; 
+            const spawnY = canvas.height - 100 - Math.random() * 150; 
+            collectables.push({ x: spawnX, y: spawnY, w: 30, h: 30, collected: false, frame: 0 });
         }
 
-        // Coin Collection
         collectables.forEach(c => {
             if (!c.collected &&
                 player.x < c.x + c.w &&
@@ -417,40 +483,34 @@
             }
         });
 
-        // 4. PET AI (Wander & Follow)
+        // 4. PET AI
         pet.wanderTimer++;
+        pet.animTimer++;
         
-        // State Machine
         if(pet.state === 'FOLLOW') {
-            // Target: slightly behind/above player
-            const targetX = player.x + (player.vx >= 0 ? -40 : 60);
-            const targetY = player.y - 20;
-            
-            // Smooth lerp
+            const targetX = player.x + (player.facingRight ? -40 : 60);
+            const targetY = player.y - 40;
             pet.x += (targetX - pet.x) * 0.05;
             pet.y += (targetY - pet.y) * 0.05;
+            pet.facingRight = (targetX > pet.x);
 
-            // Randomly switch to WANDER
             if(Math.random() < 0.005) {
                 pet.state = 'WANDER';
                 pet.wanderTimer = 0;
-                // Pick a random spot on screen relative to player
                 pet.targetX = player.x + (Math.random() * 400 - 200);
                 pet.targetY = player.y - (Math.random() * 150 + 50); 
             }
         } 
         else if (pet.state === 'WANDER') {
-            // Move towards random target
             pet.x += (pet.targetX - pet.x) * 0.02;
             pet.y += (pet.targetY - pet.y) * 0.02;
+            pet.facingRight = (pet.targetX > pet.x);
 
-            // Switch back to FOLLOW after 3 seconds (approx 180 frames)
             if(pet.wanderTimer > 180) {
                 pet.state = 'FOLLOW';
             }
         }
 
-        // Camera Follow
         cameraX = player.x - canvas.width / 2 + player.width / 2;
         if(cameraX < 0) cameraX = 0;
     }
@@ -462,54 +522,93 @@
         ctx.save();
         ctx.translate(-cameraX, 0);
 
+        // Draw Decorations (Behind)
+        decorations.forEach(d => {
+            if(assets[d.img]) {
+                ctx.drawImage(assets[d.img], d.x, d.y, d.w, d.h);
+            }
+        });
+
         // Draw Ground
-        ctx.fillStyle = '#654321';
         platforms.forEach(p => {
-            ctx.fillRect(p.x, p.y, p.w, p.h);
-            ctx.fillStyle = '#4CAF50'; // Grass top
-            ctx.fillRect(p.x, p.y, p.w, 10);
-            ctx.fillStyle = '#654321'; // Reset for next
+            if(assets.ground) {
+                ctx.drawImage(assets.ground, p.x, p.y, p.w, p.h);
+            } else {
+                ctx.fillStyle = '#654321';
+                ctx.fillRect(p.x, p.y, p.w, p.h);
+            }
         });
 
         // Draw Coins
         collectables.forEach(c => {
             if(!c.collected) {
-                ctx.fillStyle = 'gold';
-                ctx.beginPath();
-                ctx.arc(c.x + c.w/2, c.y + c.h/2, c.w/2, 0, Math.PI*2);
-                ctx.fill();
-                ctx.strokeStyle = 'orange';
-                ctx.lineWidth = 2;
-                ctx.stroke();
+                if(assets.coin) {
+                    ctx.drawImage(assets.coin, c.x, c.y, c.w, c.h);
+                } else {
+                    ctx.fillStyle = 'gold';
+                    ctx.beginPath();
+                    ctx.arc(c.x + c.w/2, c.y + c.h/2, c.w/2, 0, Math.PI*2);
+                    ctx.fill();
+                }
             }
         });
 
         // Draw Player
-        ctx.fillStyle = player.color;
-        ctx.fillRect(player.x, player.y, player.width, player.height);
-        // Eyes
-        ctx.fillStyle = 'white';
-        ctx.fillRect(player.x + (player.vx < 0 ? 5 : 25), player.y + 10, 10, 10);
+        drawPlayer();
 
         // Draw Pet
-        ctx.fillStyle = pet.color;
-        ctx.beginPath();
-        ctx.arc(pet.x + pet.width/2, pet.y + pet.height/2, pet.width/2, 0, Math.PI*2);
-        ctx.fill();
-        // Pet Wings (flapping)
-        ctx.fillStyle = 'white';
-        let flap = Math.sin(Date.now() / 100) * 10;
-        ctx.fillRect(pet.x - 10, pet.y + 10 + flap, 10, 5);
-        ctx.fillRect(pet.x + 30, pet.y + 10 + flap, 10, 5);
-
-        // Draw "Click Me" hint above pet occasionally
-        if(Math.floor(Date.now() / 1000) % 4 === 0) {
-            ctx.fillStyle = 'white';
-            ctx.font = '12px Arial';
-            ctx.fillText("?", pet.x + 10, pet.y - 10);
-        }
+        drawPet();
 
         ctx.restore();
+    }
+
+    function drawPlayer() {
+        let sprite;
+        
+        // Animation Logic
+        if(!player.grounded) {
+            sprite = assets.char_jump;
+        } else if (Math.abs(player.vx) > 0.1) {
+            player.animTimer++;
+            if(player.animTimer % 10 < 5) sprite = assets.char_walk1;
+            else sprite = assets.char_walk2;
+        } else {
+            sprite = assets.char_idle;
+        }
+
+        ctx.save();
+        if(!player.facingRight) {
+            ctx.translate(player.x + player.width, player.y);
+            ctx.scale(-1, 1);
+            ctx.drawImage(sprite, 0, 0, player.width, player.height);
+        } else {
+            ctx.drawImage(sprite, player.x, player.y, player.width, player.height);
+        }
+        ctx.restore();
+    }
+
+    function drawPet() {
+        let sprite;
+        // Flapping animation
+        if(pet.animTimer % 10 < 5) sprite = assets.pet_fly1;
+        else sprite = assets.pet_fly2;
+
+        ctx.save();
+        if(!pet.facingRight) {
+            ctx.translate(pet.x + pet.width, pet.y);
+            ctx.scale(-1, 1);
+            ctx.drawImage(sprite, 0, 0, pet.width, pet.height);
+        } else {
+            ctx.drawImage(sprite, pet.x, pet.y, pet.width, pet.height);
+        }
+        ctx.restore();
+
+        // Hint
+        if(Math.floor(Date.now() / 1000) % 4 === 0) {
+            ctx.fillStyle = 'white';
+            ctx.font = '14px Arial';
+            ctx.fillText("?", pet.x + 15, pet.y - 10);
+        }
     }
 
     function gameLoop() {
@@ -520,7 +619,6 @@
 
     // --- UTILS ---
     function setupControls() {
-        // Keyboard
         window.addEventListener('keydown', e => {
             if(e.code === 'ArrowRight') keys.right = true;
             if(e.code === 'ArrowLeft') keys.left = true;
@@ -533,7 +631,6 @@
             if(e.code === 'ArrowLeft') keys.left = false;
         });
 
-        // Touch
         const btnLeft = document.getElementById('btn-left');
         const btnRight = document.getElementById('btn-right');
         const btnJump = document.getElementById('btn-jump');
