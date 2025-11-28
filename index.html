@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dental Pet Care</title>
+    <style>
+        :root {
+            --bg-color: #87CEEB; /* Sky Blue */
+            --ui-bg: rgba(255, 255, 255, 0.9);
+            --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            font-family: var(--font-main);
+            user-select: none;
+        }
+
+        /* --- GAME WORLD --- */
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Ground */
+        #ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 64px;
+            background-image: url('assets/ground_tile.png');
+            background-repeat: repeat-x;
+            z-index: 10;
+        }
+
+        /* Objects */
+        .prop {
+            position: absolute;
+            bottom: 64px; /* Sit on top of ground */
+            z-index: 5;
+        }
+
+        #shop-door { left: 50px; width: 64px; cursor: pointer; }
+        #torch-left { left: 10px; width: 32px; }
+        #torch-right { right: 10px; width: 32px; }
+        #fence-bg { 
+            position: absolute; bottom: 64px; width: 100%; height: 40px; 
+            background-image: url('assets/fence.png'); background-repeat: repeat-x; opacity: 0.7; 
+        }
+
+        /* Characters */
+        #player {
+            position: absolute;
+            bottom: 70px;
+            left: 40%;
+            width: 64px;
+            height: 64px;
+            background-image: url('assets/char_idle.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            z-index: 20;
+            transition: left 0.2s linear;
+        }
+
+        #pet {
+            position: absolute;
+            bottom: 150px;
+            left: 45%;
+            width: 48px;
+            height: 48px;
+            background-image: url('assets/pet_idle.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            z-index: 20;
+            cursor: pointer;
+            animation: float 2s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* --- UI OVERLAY --- */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none; /* Let clicks pass through to game */
+        }
+
+        .ui-box {
+            background: var(--ui-bg);
+            padding: 8px 15px;
+            border-radius: 15px;
+            border: 2px solid #444;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            pointer-events: auto;
+            font-weight: bold;
+        }
+
+        .icon { width: 24px; height: 24px; }
+
+        #action-buttons {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .btn {
+            background: #fff;
+            border: 3px solid #333;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px #333;
+        }
+        .btn:active { transform: translateY(4px); box-shadow: 0 0 #333; }
+        .btn-blue { background: #e0f7fa; }
+        .btn-green { background: #e8f5e9; }
+
+        /* --- MODALS --- */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            border: 4px solid #333;
+        }
+
+        .shop-item {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .shop-item:hover { background-color: #f0f0f0; }
+        .shop-item img { width: 40px; height: 40px; display: block; margin: 0 auto; }
+
+        #timer-display { font-size: 3em; font-weight: bold; color: #333; margin: 20px 0; }
+        .quiz-option { display: block; width: 100%; margin: 5px 0; padding: 10px; cursor: pointer; background: #eee; border: 1px solid #ccc; }
+        .quiz-option:hover { background: #ddd; }
+
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- Background Elements -->
+    <div id="fence-bg"></div>
+    <div id="ground"></div>
+    
+    <!-- Interactive Objects -->
+    <img src="assets/shop_door.png" id="shop-door" class="prop" alt="Shop">
+    <img src="assets/torch.png" id="torch-left" class="prop" alt="Torch">
+    <img src="assets/torch.png" id="torch-right" class="prop" alt="Torch">
+    
+    <!-- Characters -->
+    <div id="player"></div>
+    <div id="pet"></div>
+
+    <!-- UI Layer -->
+    <div id="ui-layer">
+        <div class="ui-box">
+            <img src="assets/coin.png" class="icon">
+            <span id="coin-count">0</span>
+        </div>
+        <div class="ui-box" id="login-bonus" style="display:none;">
+            Daily Login! +50 Coins
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div id="action-buttons">
+        <button class="btn btn-blue" onclick="startBrushing()">🪥 Brush Timer</button>
+        <button class="btn btn-green" onclick="openShop()">🛒 Shop</button>
+    </div>
+</div>
+
+<!-- MODALS -->
+
+<!-- Quiz Modal -->
+<div id="quiz-modal" class="modal">
+    <div class="modal-content">
+        <h3>Dental Quiz!</h3>
+        <p id="quiz-question">Question goes here...</p>
+        <div id="quiz-options"></div>
+        <button class="btn" onclick="closeModal('quiz-modal')" style="margin-top:10px">Close</button>
+    </div>
+</div>
+
+<!-- Shop Modal -->
+<div id="shop-modal" class="modal">
+    <div class="modal-content">
+        <h3><img src="assets/chest.png" style="width:20px; vertical-align:middle"> Pet Shop</h3>
+        <p>Spend your coins on decorations!</p>
+        <div id="shop-items">
+            <!-- Items injected via JS -->
+        </div>
+        <button class="btn" onclick="closeModal('shop-modal')">Close</button>
+    </div>
+</div>
+
+<!-- Timer Modal -->
+<div id="timer-modal" class="modal">
+    <div class="modal-content">
+        <h3>Brushing Time!</h3>
+        <p>Brush in circles for 2 minutes.</p>
+        <div id="timer-display">02:00</div>
+        <p id="brush-tip" style="font-style:italic; color:#666;">Tip: Don't forget your tongue!</p>
+        <button class="btn" onclick="stopTimer()">Stop</button>
+    </div>
+</div>
+
+<script>
+    // --- GAME STATE ---
+    let coins = 0;
+    let lastLogin = localStorage.getItem('lastLogin');
+    let inventory = [];
+    
+    // --- ASSET REFERENCES ---
+    // We use these to swap sprites for animation
+    const sprites = {
+        player: {
+            idle: 'url("assets/char_idle.png")',
+            walk1: 'url("assets/char_walk1.png")',
+            walk2: 'url("assets/char_walk2.png")'
+        },
+        pet: {
+            idle: 'url("assets/pet_idle.png")',
+            fly1: 'url("assets/pet_fly1.png")',
+            fly2: 'url("assets/pet_fly2.png")'
+        }
+    };
+
+    // --- INITIALIZATION ---
+    window.onload = function() {
+        loadGame();
+        checkDailyLogin();
+        animateCharacters();
+    };
+
+    function loadGame() {
+        const savedCoins = localStorage.getItem('coins');
+        if (savedCoins) coins = parseInt(savedCoins);
+        updateCoinDisplay();
+        
+        // Load purchased decorations (simplified)
+        const savedInv = JSON.parse(localStorage.getItem('inventory'));
+        if(savedInv) inventory = savedInv;
+        applyDecorations();
+    }
+
+    function updateCoinDisplay() {
+        document.getElementById('coin-count').innerText = coins;
+        localStorage.setItem('coins', coins);
+    }
+
+    // --- DAILY LOGIN ---
+    function checkDailyLogin() {
+        const today = new Date().toDateString();
+        if (lastLogin !== today) {
+            coins += 50;
+            updateCoinDisplay();
+            localStorage.setItem('lastLogin', today);
+            const bonus = document.getElementById('login-bonus');
+            bonus.style.display = 'flex';
+            setTimeout(() => bonus.style.display = 'none', 3000);
+        }
+    }
+
+    // --- ANIMATION LOOP ---
+    function animateCharacters() {
+        const player = document.getElementById('player');
+        const pet = document.getElementById('pet');
+        let toggle = false;
+
+        setInterval(() => {
+            // Simple 2-frame animation
+            toggle = !toggle;
+            
+            // Only animate if we were moving (logic simplified for idle state here)
+            // For now, let's just make the pet flap wings constantly
+            pet.style.backgroundImage = toggle ? sprites.pet.fly1 : sprites.pet.fly2;
+            
+            // Player idle breathing effect (slight scale)
+            player.style.transform = toggle ? 'scaleY(1.02)' : 'scaleY(1)';
+        }, 500);
+    }
+
+    // --- PET INTERACTION (QUIZ) ---
+    document.getElementById('pet').addEventListener('click', () => {
+        openQuiz();
+    });
+
+    const quizData = [
+        { q: "How long should you brush?", a: ["30 seconds", "2 minutes", "5 minutes"], correct: 1 },
+        { q: "How often should you floss?", a: ["Once a week", "Once a day", "Never"], correct: 1 },
+        { q: "What fights cavities?", a: ["Sugar", "Fluoride", "Soda"], correct: 1 }
+    ];
+
+    function openQuiz() {
+        const modal = document.getElementById('quiz-modal');
+        const qText = document.getElementById('quiz-question');
+        const optsDiv = document.getElementById('quiz-options');
+        
+        // Pick random question
+        const qIndex = Math.floor(Math.random() * quizData.length);
+        const q = quizData[qIndex];
+
+        qText.innerText = q.q;
+        optsDiv.innerHTML = '';
+
+        q.a.forEach((ans, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'quiz-option';
+            btn.innerText = ans;
+            btn.onclick = () => checkAnswer(index, q.correct);
+            optsDiv.appendChild(btn);
+        });
+
+        modal.style.display = 'flex';
+    }
+
+    function checkAnswer(selected, correct) {
+        if (selected === correct) {
+            alert("Correct! +10 Coins");
+            coins += 10;
+            updateCoinDisplay();
+        } else {
+            alert("Oops! Try again next time.");
+        }
+        closeModal('quiz-modal');
+    }
+
+    // --- SHOP SYSTEM ---
+    const shopItems = [
+        { id: 'hat', name: 'Cool Hat', price: 50, img: 'assets/grass_tuft.png' }, // Placeholder image
+        { id: 'glow', name: 'Glow Effect', price: 100, img: 'assets/torch.png' }
+    ];
+
+    function openShop() {
+        const container = document.getElementById('shop-items');
+        container.innerHTML = '';
+        
+        shopItems.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'shop-item';
+            div.innerHTML = `<img src="${item.img}"><br><b>${item.name}</b><br>${item.price} Coins`;
+            div.onclick = () => buyItem(item);
+            container.appendChild(div);
+        });
+
+        document.getElementById('shop-modal').style.display = 'flex';
+    }
+
+    function buyItem(item) {
+        if (inventory.includes(item.id)) {
+            alert("You already own this!");
+            return;
+        }
+        if (coins >= item.price) {
+            coins -= item.price;
+            inventory.push(item.id);
+            localStorage.setItem('inventory', JSON.stringify(inventory));
+            updateCoinDisplay();
+            applyDecorations();
+            alert(`Bought ${item.name}!`);
+        } else {
+            alert("Not enough coins!");
+        }
+    }
+
+    function applyDecorations() {
+        const pet = document.getElementById('pet');
+        // Simple visual change based on inventory
+        if (inventory.includes('glow')) {
+            pet.style.filter = "drop-shadow(0 0 10px gold)";
+        }
+        // Note: For the hat, you'd usually overlay another image div on top of the pet
+    }
+
+    // --- BRUSHING TIMER ---
+    let timerInterval;
+    const tips = [
+        "Brush the back of your teeth!",
+        "Don't press too hard.",
+        "Spit, don't rinse immediately.",
+        "Smile at yourself in the mirror!"
+    ];
+
+    function startBrushing() {
+        document.getElementById('timer-modal').style.display = 'flex';
+        let timeLeft = 120; // 2 minutes
+        const display = document.getElementById('timer-display');
+        const tipDisplay = document.getElementById('brush-tip');
+
+        clearInterval(timerInterval);
+        
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            
+            // Update Tip every 30 seconds
+            if(timeLeft % 30 === 0) {
+                tipDisplay.innerText = tips[Math.floor(Math.random() * tips.length)];
+            }
+
+            // Format time
+            const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            const s = (timeLeft % 60).toString().padStart(2, '0');
+            display.innerText = `${m}:${s}`;
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                alert("Great job! Teeth are clean. +100 Coins!");
+                coins += 100;
+                updateCoinDisplay();
+                closeModal('timer-modal');
+            }
+        }, 1000);
+    }
+
+    function stopTimer() {
+        clearInterval(timerInterval);
+        closeModal('timer-modal');
+    }
+
+    // --- UTILS ---
+    function closeModal(id) {
+        document.getElementById(id).style.display = 'none';
+    }
+
+    // Click shop door to open shop
+    document.getElementById('shop-door').addEventListener('click', openShop);
+
+</script>
+</body>
+</html>
