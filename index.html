@@ -64,11 +64,11 @@
         }
         .btn:active { box-shadow: 0 1px #000; transform: translateY(3px); }
 
-        /* Top Left Buttons - Moved slightly to avoid flags */
+        /* Top Left Buttons */
         #top-left-menu {
             position: absolute;
             top: 10px;
-            left: 60px; /* Shifted right to make room for flags */
+            left: 120px; /* Shifted right to avoid flags at x=70 */
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
@@ -180,8 +180,20 @@
             border: 1px solid #1e8449;
         }
 
+        /* Timer Specifics */
         #timer-display { font-size: 40px; color: #e74c3c; font-weight: bold; }
-        #timer-instruction { font-size: 18px; color: #555; margin-bottom: 20px; min-height: 50px;}
+        #timer-instruction { font-size: 18px; color: #555; margin-bottom: 10px; min-height: 40px;}
+        
+        #brushing-guide-img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 10px;
+            border: 2px solid #ccc;
+            margin-bottom: 15px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
 
         .quiz-option {
             display: block;
@@ -270,6 +282,8 @@
     <div id="timer-modal" class="modal">
         <h2>🦷 Brushing Time</h2>
         <div id="timer-display">02:00</div>
+        <!-- Added Guide Image Here -->
+        <img id="brushing-guide-img" src="images/brushing_guide.png" alt="Brushing Guide">
         <div id="timer-instruction">Get your toothbrush ready...</div>
         <button id="start-timer-btn" class="btn" onclick="startBrushing()">Start</button>
         <button class="btn" onclick="closeModal('timer-modal'); stopBrushing();">Exit</button>
@@ -295,7 +309,6 @@
             pet_fly2: 'images/pet_fly2.png',
             coin: 'images/coin.png',
             water: 'images/water.png',
-            // Flags
             flag_blue_a: 'images/flag_blue_a.png',
             flag_blue_b: 'images/flag_blue_b.png',
             flag_green_a: 'images/flag_green_a.png',
@@ -318,7 +331,7 @@
                     if (assetsLoaded === totalAssets) startGame();
                 };
                 images[key].onerror = () => {
-                    assetsLoaded++; // Skip errors
+                    assetsLoaded++;
                     if (assetsLoaded === totalAssets) startGame();
                 }
             }
@@ -347,12 +360,12 @@
         let particles = [];
         const TILE_SIZE = 40;
 
-        // --- FLAGS CONFIGURATION ---
+        // FLAGS UPDATED TO X=70
         const flagLinks = [
-            { color: 'red',    url: 'https://www.youtube.com', x: 50, y: 100 },
-            { color: 'blue',   url: 'https://www.google.com',  x: 50, y: 180 },
-            { color: 'green',  url: 'https://www.wikipedia.org', x: 50, y: 260 },
-            { color: 'yellow', url: 'https://github.com',      x: 50, y: 340 }
+            { color: 'red',    url: 'https://www.youtube.com', x: 70, y: 100 },
+            { color: 'blue',   url: 'https://www.google.com',  x: 70, y: 180 },
+            { color: 'green',  url: 'https://www.wikipedia.org', x: 70, y: 260 },
+            { color: 'yellow', url: 'https://github.com',      x: 70, y: 340 }
         ];
 
         function resize() {
@@ -407,7 +420,6 @@
 
         loadImages(); 
 
-        // INPUT HANDLING
         window.addEventListener('keydown', e => keys[e.key] = true);
         window.addEventListener('keyup', e => keys[e.key] = false);
 
@@ -431,29 +443,37 @@
         btnAct.addEventListener('click', (e) => { interact(); });
         window.addEventListener('keydown', (e) => { if(e.code === 'Space') interact(); });
 
-        // CANVAS CLICK (For Flags)
-        canvas.addEventListener('click', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const clickY = e.clientY - rect.top;
-
-            // Check if clicked on a flag
-            flagLinks.forEach(f => {
-                if(clickX >= f.x && clickX <= f.x + 40 &&
-                   clickY >= f.y && clickY <= f.y + 40) {
-                       // Open link
-                       if(confirm("Go to website: " + f.url + "?")) {
-                           window.open(f.url, '_blank');
-                       }
-                   }
-            });
-        });
-
         function interact() {
+            // 1. Check Shop Collision
             if (checkCollision(player, shopDoor)) {
                 openShop();
                 return;
             }
+
+            // 2. Check Flag Collision (Proximity)
+            const pCenterX = player.x + player.w/2;
+            const pCenterY = player.y + player.h/2;
+            let foundFlag = null;
+
+            flagLinks.forEach(f => {
+                // Flag center approx (f.x+20, f.y+20)
+                const fCenterX = f.x + 20;
+                const fCenterY = f.y + 20;
+                // Distance check
+                const dist = Math.hypot(pCenterX - fCenterX, pCenterY - fCenterY);
+                if (dist < 60) { // If within 60px of the flag center
+                    foundFlag = f;
+                }
+            });
+
+            if (foundFlag) {
+                if(confirm("Go to website: " + foundFlag.url + "?")) {
+                    window.open(foundFlag.url, '_blank');
+                }
+                return;
+            }
+
+            // 3. Default Pet Interaction
             document.getElementById('interact-modal').style.display = 'block';
         }
 
@@ -527,13 +547,12 @@
             drawFence();
             ctx.drawImage(images.shop, shopDoor.x, shopDoor.y, shopDoor.w, shopDoor.h);
             
-            // Draw Flags
-            const flagFrame = Math.floor(Date.now() / 400) % 2; // Toggle 0 or 1
+            const flagFrame = Math.floor(Date.now() / 400) % 2; 
             flagLinks.forEach(f => {
                 const suffix = (flagFrame === 0) ? 'a' : 'b';
                 const key = `flag_${f.color}_${suffix}`;
                 if(images[key]) {
-                    ctx.drawImage(images[key], f.x, f.y, 40, 40); // Size 40x40
+                    ctx.drawImage(images[key], f.x, f.y, 40, 40); 
                 }
             });
 
