@@ -1,6 +1,6 @@
 {
   "name": "Dental Care Pet",
-  "short_name": "DentalPet",
+  "short_name": "DentalCare",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#87CEEB",
