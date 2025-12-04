@@ -586,7 +586,7 @@
             if (userData.activeItems.includes('crown')) ctx.fillText("👑", 0, -player.h/2 - 5);
             if (userData.activeItems.includes('glasses')) ctx.fillText("🕶️", 5, -player.h/2 + 25);
             if (userData.activeItems.includes('bunny')) ctx.fillText("🐰", 0, -player.h/2 - 5);
-            if (userData.activeItems.includes('bowtie')) ctx.fillText("🎀", 0, player.h/2 - 8);
+            if (userData.activeItems.includes('bowtie')) ctx.fillText("🎀", 0, player.h/2 - 5);
             if (userData.activeItems.includes('balloon')) ctx.fillText("🎈", -20, -player.h);
 
             ctx.globalAlpha = 1.0; 
@@ -597,9 +597,9 @@
             ctx.drawImage(petImg, pet.x, floatY, pet.w, pet.h);
 
             ctx.font = "20px Arial";
-            if (userData.activeItems.includes('pet_hat')) ctx.fillText("🎩", pet.x + pet.w/2, floatY - 5);
-            if (userData.activeItems.includes('pet_bow')) ctx.fillText("🎀", pet.x + pet.w/2, floatY + pet.h);
-            if (userData.activeItems.includes('pet_shades')) ctx.fillText("🕶️", pet.x + pet.w/2, floatY + 15);
+            if (userData.activeItems.includes('pet_hat')) ctx.fillText("🎩", pet.x - 5 + pet.w/2, floatY - 5);
+            if (userData.activeItems.includes('pet_bow')) ctx.fillText("🎀", pet.x - 5 + pet.w/2, floatY + pet.h);
+            if (userData.activeItems.includes('pet_shades')) ctx.fillText("🕶️", pet.x - 5 + pet.w/2, floatY + 15);
 
             particles.forEach(p => {
                 ctx.globalAlpha = p.life / 20;
