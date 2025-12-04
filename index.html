@@ -350,7 +350,7 @@
         let keys = {};
         
         let userData = {
-            coins: parseInt(localStorage.getItem('dental_coins')) || 0,
+            coins: parseInt(localStorage.getItem('dental_coins')) || 1000,
             lastLogin: localStorage.getItem('dental_last_login') || null,
             loginHistory: JSON.parse(localStorage.getItem('dental_login_history')) || [],
             inventory: JSON.parse(localStorage.getItem('dental_inventory')) || [],
