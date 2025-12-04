@@ -350,7 +350,7 @@
         let keys = {};
         
         let userData = {
-            coins: parseInt(localStorage.getItem('dental_coins')) || 1000,
+            coins: parseInt(localStorage.getItem('dental_coins')) || 0,
             lastLogin: localStorage.getItem('dental_last_login') || null,
             loginHistory: JSON.parse(localStorage.getItem('dental_login_history')) || [],
             inventory: JSON.parse(localStorage.getItem('dental_inventory')) || [],
@@ -837,8 +837,8 @@
                     userData.quizHistory.answered.push(questionIndex);
                     
                     if (idx === q.correct) {
-                        alert("✅ Correct! +20 Coins");
-                        userData.coins += 20;
+                        alert("✅ Correct! +2000 Coins");
+                        userData.coins += 2000;
                     } else {
                         alert("❌ Oops! That wasn't right.");
                     }
