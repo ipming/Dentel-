@@ -555,19 +555,33 @@
                     player.y + player.h > grass.y
                 ) {
                     // Only trigger if a minute (60,000 ms) has passed since last collision for this patch
-                    if (now - grass.lastCollected > 60000) {
-                        if (grass.type === 1 || grass.type === 2) {
-                            userData.coins += 5;
-                            updateUI();
-                            // Optionally, you can show a subtle "+5" effect here
-                        } else if (grass.type === 3) {
-                            userData.coins = Math.max(0, userData.coins - 5); // Don't go negative!
-                            updateUI();
-                            // Optionally, show a "-5" effect
-                        }
-                        grass.lastCollected = now;
-                        saveData();
+                if (now - grass.lastCollected > 60000) {
+                    if (grass.type === 1 || grass.type === 2) {
+                        userData.coins += 5;
+                        updateUI();
+                        // Spawn gold dot at grass!
+                        particles.push({
+                            x: grass.x + 16, // center of grass patch
+                            y: grass.y + 16,
+                            life: 30,
+                            color: 'gold',   // custom identifier
+                            type: 'dot'
+                        });
+                    } else if (grass.type === 3) {
+                        userData.coins = Math.max(0, userData.coins - 5);
+                        updateUI();
+                        // Spawn red dot
+                        particles.push({
+                            x: grass.x + 16,
+                            y: grass.y + 16,
+                            life: 30,
+                            color: 'red',
+                            type: 'dot'
+                        });
                     }
+                    grass.lastCollected = now;
+                    saveData();
+                }
                 }
             });
 
@@ -650,16 +664,39 @@
             if (userData.activeItems.includes('pet_bow')) ctx.fillText("🎀", pet.x + pet.w/2, floatY + pet.h);
             if (userData.activeItems.includes('pet_shades')) ctx.fillText("🕶️", pet.x + pet.w/2, floatY + 15);
 
-            particles.forEach(p => {
-                ctx.globalAlpha = p.life / 20;
-                if(p.color === 'blue') ctx.drawImage(images.water, p.x, p.y, 16, 16);
-                else {
-                    ctx.fillStyle = p.color;
+            particles.forEach((p, i) => {
+                p.life--;
+                p.y -= 1; // float upward
+                // ... existing code for other effects...
+            
+                if (p.type === "dot") {
+                    ctx.save();
+                    // Fades out as life decreases
+                    ctx.globalAlpha = Math.max(0, p.life / 30);
                     ctx.beginPath();
-                    ctx.arc(p.x, p.y, 5, 0, Math.PI*2);
+                    ctx.arc(p.x, p.y, 12, 0, Math.PI * 2);
+                    ctx.fillStyle = (p.color === "gold") ? "#ffd700" : "#ff2727";
                     ctx.fill();
+                    ctx.lineWidth = 4;
+                    ctx.strokeStyle = "white";
+                    ctx.stroke();
+                    ctx.restore();
+                    ctx.globalAlpha = 1;
+                } else {
+                    // ...your existing trail and sparkle effects...
+                    ctx.globalAlpha = p.life / 20;
+                    if (p.color === 'blue') ctx.drawImage(images.water, p.x, p.y, 16, 16);
+                    else {
+                        ctx.fillStyle = p.color;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, 5, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                    ctx.globalAlpha = 1.0;
                 }
-                ctx.globalAlpha = 1.0;
+            
+                // Remove when dead
+                if (p.life <= 0) particles.splice(i, 1);
             });
         }
 
