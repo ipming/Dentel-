@@ -558,35 +558,17 @@
                 const key = `flag_${f.color}_${suffix}`;
                 if(images[key]) {
                     ctx.drawImage(images[key], f.x, f.y, 40, 40); 
-                    
-                    // Prepare variables
-                    const label = `Dental Tips${idx + 1}`;
-                    ctx.font = "bold 24px Arial";
+                    // Add label below the flag
+                    ctx.font = "bold 16px Arial";
                     ctx.textAlign = "center";
-                    const x = f.x + 20, y = f.y + 64; // Move a bit further below flag
-                    const padding = 10;
-                    const metrics = ctx.measureText(label);
-                    const labelWidth = metrics.width;
-                    const fontSize = 24;
-                    
-                    // Draw semi-transparent background
-                    ctx.fillStyle = "rgba(0,0,0,0.65)";
-                    ctx.fillRect(x - labelWidth/2 - padding, y - fontSize, labelWidth + padding * 2, fontSize + 10);
-                    
-                    // Draw strong outline
-                    ctx.strokeStyle = "black";
-                    ctx.lineWidth = 6;
-                    ctx.strokeText(label, x, y);
-                    
-                    // Draw fill text
-                    ctx.fillStyle = "white";
-                    ctx.shadowColor = "black";
-                    ctx.shadowBlur = 5;
-                    ctx.fillText(label, x, y);
-                    
-                    // Remove shadow for future drawings
-                    ctx.shadowColor = "transparent";
-                    ctx.shadowBlur = 0;;
+                    ctx.fillStyle = "#fff";
+                    ctx.strokeStyle = "#222";
+                    ctx.lineWidth = 3;
+                    const label = `Dental Tips${idx + 1}`;
+                    // Draw stroke for contrast (optional)
+                    ctx.strokeText(label, f.x + 20, f.y + 60); 
+                    // Draw label text
+                    ctx.fillText(label, f.x + 20, f.y + 60); 
                 }
             });
 
