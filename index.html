@@ -553,6 +553,18 @@
 
             drawFence();
             ctx.drawImage(images.shop, shopDoor.x, shopDoor.y, shopDoor.w, shopDoor.h);
+                        // Draw "Shop" label centered above the shop door
+            ctx.font = "bold 18px Arial";
+            ctx.textAlign = "center";
+            ctx.fillStyle = "white";
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 3;
+            
+            const shopLabelX = shopDoor.x + shopDoor.w / 2;
+            const shopLabelY = shopDoor.y - 10; // 10px above the shop door
+            
+            ctx.strokeText("Shop", shopLabelX, shopLabelY);
+            ctx.fillText("Shop", shopLabelX, shopLabelY);
             
             const flagFrame = Math.floor(Date.now() / 400) % 2;          
             flagLinks.forEach((f, index) => {
