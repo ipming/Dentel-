@@ -248,7 +248,7 @@
 
     <div id="calendar-modal" class="modal">
         <h2>📅 Login History</h2>
-        <p>Green days are days you took care of your pet!</p>
+        <p>Green days are days you take care of your pet!</p>
         <div id="calendar-grid"></div>
         <br>
         <button class="btn" onclick="closeModal('calendar-modal')">Close</button>
@@ -367,10 +367,10 @@
 
         // FLAGS UPDATED TO X=70
         const flagLinks = [
-            { color: 'red',    url: 'https://www.youtube.com', x: 70, y: 260 },
-            { color: 'blue',   url: 'https://www.google.com',  x: 70, y: 340 },
-            { color: 'green',  url: 'https://www.wikipedia.org', x: 70, y: 420 },
-            { color: 'yellow', url: 'https://github.com',      x: 70, y: 500 }
+            { color: 'red',    url: 'https://www.toothclub.gov.hk/en/en_home_01_01_03.html', x: 70, y: 260 },
+            { color: 'blue',   url: 'https://jcsohp.org/how-to-brush-your-teeth-correctly/',  x: 70, y: 340 },
+            { color: 'green',  url: 'https://www.bioniq-oralcare.com/zh-hk/dental-health/teeth/tooth-structure', x: 70, y: 420 },
+            { color: 'yellow', url: 'https://youtu.be/x2W2YAEVtiM?si=gyHddMLuDsA2cWGL',      x: 70, y: 500 }
         ];
 
         function resize() {
@@ -382,12 +382,11 @@
 
         function initGrass() {
             grasses.length = 0;
-            for (let i = 0; i < 30; i++) {
+            for(let i=0; i<30; i++) {
                 grasses.push({
                     x: Math.random() * width,
                     y: Math.random() * height,
-                    type: Math.floor(Math.random() * 3) + 1,  // 1, 2, or 3
-                    lastActivated: 0    // Time in ms; 0 means never activated
+                    type: Math.floor(Math.random() * 3) + 1 
                 });
             }
         }
@@ -461,7 +460,6 @@
             const pCenterY = player.y + player.h/2;
             let foundFlag = null;
 
-        
             flagLinks.forEach(f => {
                 // Flag center approx (f.x+20, f.y+20)
                 const fCenterX = f.x + 20;
@@ -553,41 +551,16 @@
 
             drawFence();
             ctx.drawImage(images.shop, shopDoor.x, shopDoor.y, shopDoor.w, shopDoor.h);
-                        // Draw "Shop" label centered above the shop door
-            ctx.font = "bold 18px Arial";
-            ctx.textAlign = "center";
-            ctx.fillStyle = "white";
-            ctx.strokeStyle = "black";
-            ctx.lineWidth = 3;
             
-            const shopLabelX = shopDoor.x + shopDoor.w / 2;
-            const shopLabelY = shopDoor.y + 20; //  below the shop door
-            
-            ctx.strokeText("Shop", shopLabelX, shopLabelY);
-            ctx.fillText("Shop", shopLabelX, shopLabelY);
-            
-            const flagFrame = Math.floor(Date.now() / 400) % 2;          
-            flagLinks.forEach((f, index) => {
+            const flagFrame = Math.floor(Date.now() / 400) % 2; 
+            flagLinks.forEach(f => {
                 const suffix = (flagFrame === 0) ? 'a' : 'b';
                 const key = `flag_${f.color}_${suffix}`;
                 if(images[key]) {
-                    ctx.drawImage(images[key], f.x, f.y, 40, 40);
-            
-                    // Draw the label under the flag
-                    ctx.font = "bold 16px Arial";
-                    ctx.textAlign = "center";
-                    ctx.fillStyle = "white";
-                    ctx.strokeStyle = "black";
-                    ctx.lineWidth = 3;
-            
-                    const label = `Dental Care Tips ${index + 1}`;
-                    const labelX = f.x + 20; // Centered under the flag
-                    const labelY = f.y + 55; // Below the flag
-            
-                    ctx.strokeText(label, labelX, labelY); // Black outline
-                    ctx.fillText(label, labelX, labelY);   // White label
+                    ctx.drawImage(images[key], f.x, f.y, 40, 40); 
                 }
             });
+
             grasses.forEach(g => {
                 let img = images['grass' + g.type];
                 ctx.drawImage(img, g.x, g.y, 32, 32);
@@ -613,7 +586,7 @@
             if (userData.activeItems.includes('crown')) ctx.fillText("👑", 0, -player.h/2 - 5);
             if (userData.activeItems.includes('glasses')) ctx.fillText("🕶️", 5, -player.h/2 + 25);
             if (userData.activeItems.includes('bunny')) ctx.fillText("🐰", 0, -player.h/2 - 5);
-            if (userData.activeItems.includes('bowtie')) ctx.fillText("🎀", 0, player.h/2 - 5);
+            if (userData.activeItems.includes('bowtie')) ctx.fillText("🎀", 0, player.h/2 - 10);
             if (userData.activeItems.includes('balloon')) ctx.fillText("🎈", -20, -player.h);
 
             ctx.globalAlpha = 1.0; 
@@ -624,9 +597,9 @@
             ctx.drawImage(petImg, pet.x, floatY, pet.w, pet.h);
 
             ctx.font = "20px Arial";
-            if (userData.activeItems.includes('pet_hat')) ctx.fillText("🎩", pet.x - 5 + pet.w/2, floatY - 5);
-            if (userData.activeItems.includes('pet_bow')) ctx.fillText("🎀", pet.x - 5 + pet.w/2, floatY + pet.h);
-            if (userData.activeItems.includes('pet_shades')) ctx.fillText("🕶️", pet.x - 5 + pet.w/2, floatY + 15);
+            if (userData.activeItems.includes('pet_hat')) ctx.fillText("🎩", pet.x + pet.w/2, floatY - 5);
+            if (userData.activeItems.includes('pet_bow')) ctx.fillText("🎀", pet.x + pet.w/2, floatY + pet.h);
+            if (userData.activeItems.includes('pet_shades')) ctx.fillText("🕶️", pet.x + pet.w/2, floatY + 15);
 
             particles.forEach(p => {
                 ctx.globalAlpha = p.life / 20;
@@ -639,41 +612,6 @@
                 }
                 ctx.globalAlpha = 1.0;
             });
-
-            const now = Date.now();
-            grasses.forEach((g, idx) => {
-                // Simple collision: check if player rectangle overlaps center of grass
-                const gx = g.x + 16, gy = g.y + 16;
-                const px = player.x + player.w / 2, py = player.y + player.h / 2;
-                const dist = Math.hypot(px - gx, py - gy);
-            
-                if (dist < 32) { // Within 32 px (grass tile size)
-                    // 60 seconds = 60,000 ms cooldown
-                    if (now - g.lastActivated > 60000) {
-                        if (g.type === 1 || g.type === 2) {
-                            userData.coins += 1;
-            
-                            // Optionally: temporary particle/visual feedback
-                            particles.push({ x: gx, y: gy, life: 20, color: "gold" });
-            
-                            g.lastActivated = now;
-                            saveData();
-                            updateUI();
-                        } else if (g.type === 3) {
-                            userData.coins = Math.max(0, userData.coins - 1);
-            
-                            // Optionally: temporary negative feedback
-                            particles.push({ x: gx, y: gy, life: 20, color: "red" });
-            
-                            g.lastActivated = now;
-                            saveData();
-                            updateUI();
-                        }
-                    }
-                }
-            });
-
-           
         }
 
         function drawFence() {
@@ -831,21 +769,46 @@
         };
 
         const quizQuestions = [
-            { q: "How long should you brush?", a: ["30 seconds", "2 minutes", "5 minutes"], correct: 1 },
-            { q: "How often should you floss?", a: ["Once a week", "Every day", "Never"], correct: 1 },
-            { q: "What helps strengthen teeth?", a: ["Sugar", "Fluoride", "Lemon Juice"], correct: 1 },
-            { q: "When is the best time to brush?", a: ["After breakfast & before bed", "Only morning", "Once a week"], correct: 0 },
-            { q: "What is a cavity?", a: ["A type of candy", "A hole in the tooth", "A toothbrush brand"], correct: 1 },
-            { q: "How often should you change your toothbrush?", a: ["Every 3-4 months", "Every year", "When it breaks"], correct: 0 },
-            { q: "What food is bad for teeth?", a: ["Cheese", "Sticky Candy", "Milk"], correct: 1 },
-            { q: "What does a dentist do?", a: ["Fixes cars", "Checks teeth health", "Sells toys"], correct: 1 },
-            { q: "Why do we floss?", a: ["To clean between teeth", "To make teeth blue", "It tastes good"], correct: 0 },
-            { q: "What is plaque?", a: ["A sticky film of bacteria", "A gold medal", "Toothpaste"], correct: 0 },
-            { q: "Which drink is best for teeth?", a: ["Soda", "Water", "Energy drinks"], correct: 1 },
-            { q: "How many times a day should you brush?", a: ["1", "2", "5"], correct: 1 }
+            { q: "建議每天刷牙幾次?", a: ["至少一次", "至少兩次", "至少三次"], correct: 1 },
+            { q: "每次刷牙應持續約多長時間?", a: ["30秒", "1分鐘", "2分鐘"], correct: 2 },
+            { q: "為了預防蛀牙，牙膏中應含有什麼關鍵成分?", a: ["香料", "氟化物", "糖精"], correct: 1 },
+            { q: "牙線應該在什麼時候使用?", a: ["刷牙前", "刷牙後", "任何時間都可以，但每天至少一次"], correct: 2 },
+            { q: "蛀牙的主要原因是什麼?", a: ["吃太多水果", "細菌分解糖產酸", "喝太多水"], correct: 1 },
+            { q: "牙齦出血最常見的原因是什麼?", a: ["刷牙太用力", "牙齦炎", "使用牙線"], correct: 1 },
+            { q: "預防蛀牙，應該限制攝入什麼?", a: ["蔬菜", "水果", "含糖食物和飲料"], correct: 2 },
+            { q: "牙醫建議多久進行一次口腔檢查?", a: ["每半年", "每年", "每兩年"], correct: 0 },
+            { q: "應該多久更換一次牙刷?", a: ["每三個月", "每六個月", "每年"], correct: 0 },
+            { q: "漱口水的主要作用是什麼?", a: ["替代刷牙和牙線", "清新口氣和輔助減少菌斑", "美白牙齒"], correct: 1 },
+            { q: "什麼是牙菌斑?", a: ["牙齒上的食物殘渣", "細菌形成的粘性薄膜", "蛀牙的洞"], correct: 1 },
+            { q: "牙石是什麼?", a: ["牙齒上的污漬", "鈣化的牙菌斑", "蛀牙"], correct: 1 },
+            { q: "吃糖後，應該怎麼做來保護牙齒?", a: ["立即刷牙", "漱口", "吃更多糖中和"], correct: 1 },
+            { q: "窩溝封閉劑主要用於預防哪裡蛀牙?", a: ["牙根", "牙齒咬合面", "牙齒鄰面"], correct: 1 },
+            { q: "哪些食物對牙齒健康有益?", a: ["蘋果和胡蘿蔔（需咀嚼，刺激唾液分泌）", "糖果和蛋糕", "汽水"], correct: 0 },
+            { q: "唾液對口腔健康的作用是什麼?", a: ["中和酸性", "清潔牙齒", "所有以上"], correct: 2 },
+            { q: "使用電動牙刷比手動牙刷更有效嗎?", a: ["是，總是更有效", "否，手動牙刷更好", "取決於刷牙技巧"], correct: 2 },
+            { q: "如果牙齒敏感，應該怎麼辦?", a: ["停止刷牙", "使用抗敏感牙膏", "喝熱水"], correct: 1 },
+            { q: "以下哪個是推薦的刷牙方法?", a: ["橫向大力刷", "竪向並小圓圈輕柔刷", "轉圈用力刷"], correct: 1 },
+            { q: "下列何種飲品對牙齒侵蝕風險最高?", a: ["無糖冰黑咖啡", "無糖檸檬水", "全脂牛奶"], correct: 1 },
+            { q: "下列何者不是「牙周病」的早期關鍵症狀?", a: ["牙齦紅腫", "牙齒輕微鬆動", "刷牙出血"], correct: 1 },
+            { q: "睡眠磨牙的主要成因可能是?", a: ["壓力與咬合干擾", "睡前食用堅果", "牙齒過白"], correct: 0 },
+            { q: "長期服用降血壓藥物，可能出現何種口腔問題?", a: ["牙齦增生", "牙齒變綠", "唾液過多"], correct: 0 },
+            { q: "餐後立即刷牙是保護牙齒的好習慣嗎?", a: ["是，越快刷牙越能減少蛀牙", "否，應等待30分鐘再刷", "僅需漱口即可"], correct: 1 },
+            { q: "使用牙線時牙齦出血，應如何處理?", a: ["繼續使用牙線", "更輕柔地繼續清潔該區域", "不應繼續刷牙"], correct: 1 },
+            { q: "刷牙時「貝氏刷牙法」建議刷毛與牙齒呈什麼角度?", a: ["90度垂直", "45度朝向牙齦溝", "水平橫向"], correct: 1 },
+            { q: "患者有敏感性牙齒，下列哪項護理建議最不恰當?", a: ["使用抗敏感牙膏", "避免過度用力刷牙", "常用美白貼片改善外觀"], correct: 2 },
+            { q: "智齒無蛀牙且生長位置正常，什麼情況下仍需考慮拔除?", a: ["從未疼痛", "無法清潔到位，反覆引發牙齦炎", "患者不喜歡其外形"], correct: 1 },
+            { q: "牙結石的形成主要與什麼相關?", a: ["食物殘渣直接硬化", "唾液礦物質與牙菌斑結合", "飲用硬水"], correct: 1 },
+            { q: "根管治療後的牙齒較脆弱，主因是?", a: ["失去牙髓營養供應", "治療中磨損過多齒質", "以上皆是"], correct: 2 },
+            { q: "唾液在牙齒健康中扮演的角色，不包括?", a: ["沖洗食物殘渣", "提供鈣磷幫助再礦化", "直接殺滅所有口腔細菌"], correct: 2 },
+            { q: "「牙齒美白」療程可能產生的副作用，何者最需優先考量?", a: ["牙齒敏感與牙齦刺激", "效果僅維持一個月", "價格高昂"], correct: 0 },
+            { q: "「乳牙蛀掉沒關係，反正會換牙」此觀念忽略的重點是?", a: ["乳牙蛀牙可能影響恆牙發育與排列", "兒童不會感到疼痛", "治療乳牙浪費金錢"], correct: 0 },
+            { q: "使用牙籤清牙縫，長期可能造成什麼問題?", a: ["牙縫變大與牙齦萎縮", "牙齒變白", "增強牙齦韌性"], correct: 0 },
+            { q: "刷牙力道越大是否清潔效果越好?", a: ["是，能徹底去除汙垢", "否，可能損傷牙齦與牙根", "僅對牙結石有效"], correct: 1 },
+            { q: "漱口水可以完全取代刷牙嗎?", a: ["可以，殺菌效果更好", "不可以，無法有效去除牙菌斑", "視漱口水成分而定"], correct: 1 },
+            { q: "吃糖後立即漱口，是否能完全預防蛀牙?", a: ["是，糖分已被清除", "否，口腔酸度仍會持續一段時間", "僅對兒童有效"], correct: 1 },
+            { q: "植牙後仍需注重口腔清潔，主要原因為何?", a: ["避免植體周圍炎導致植體失敗", "防止金屬過敏", "維持美觀"], correct: 0 }
         ];
-        const DAILY_QUIZ_LIMIT = 10;
-        
+
         window.startQuiz = function() {
             closeModal('interact-modal');
 
@@ -855,16 +818,16 @@
                 saveData();
             }
 
-        if (userData.quizHistory.answered.length >= DAILY_QUIZ_LIMIT) {
-            alert(`🧠 You've completed your ${DAILY_QUIZ_LIMIT} daily quizzes!\nCome back tomorrow for more.`);
-            return;
-        }
+            if (userData.quizHistory.answered.length >= 3) {
+                alert("🧠 You've completed your 3 daily quizzes!\nCome back tomorrow for more.");
+                return;
+            }
 
             loadNextQuestion();
         };
 
         function loadNextQuestion() {
-            if (userData.quizHistory.answered.length >= DAILY_QUIZ_LIMIT) {
+            if (userData.quizHistory.answered.length >= 3) {
                 closeModal('quiz-modal');
                 alert("🎉 Daily Quizzes Completed!");
                 return;
@@ -886,7 +849,7 @@
             modal.style.display = 'block';
             
             const count = userData.quizHistory.answered.length + 1;
-            document.getElementById('quiz-header').innerText = `Daily Question ${count}/${DAILY_QUIZ_LIMIT}`;
+            document.getElementById('quiz-header').innerText = `Daily Question ${count}/3`;
             document.getElementById('quiz-question').innerText = q.q;
             
             const opts = document.getElementById('quiz-options');
@@ -900,8 +863,8 @@
                     userData.quizHistory.answered.push(questionIndex);
                     
                     if (idx === q.correct) {
-                        alert("✅ Correct! +2000 Coins");
-                        userData.coins += 2000;
+                        alert("✅ Correct! +20 Coins");
+                        userData.coins += 20;
                     } else {
                         alert("❌ Oops! That wasn't right.");
                     }
@@ -909,7 +872,7 @@
                     saveData();
                     updateUI();
                     
-                    if (userData.quizHistory.answered.length < DAILY_QUIZ_LIMIT) {
+                    if (userData.quizHistory.answered.length < 3) {
                         loadNextQuestion();
                     } else {
                         closeModal('quiz-modal');
@@ -937,11 +900,12 @@
                 let s = timeLeft % 60;
                 display.innerText = `0${m}:${s < 10 ? '0'+s : s}`;
 
-                if (timeLeft > 100) instruct.innerText = "STEP1";
-                else if (timeLeft > 80) instruct.innerText = "STEP2";
-                else if (timeLeft > 60) instruct.innerText = "Brush Bottom Teeth";
-                else if (timeLeft > 40) instruct.innerText = "Brush Chewing Surfaces";
-                else if (timeLeft > 20) instruct.innerText = "STEP5";
+                if (timeLeft > 100) instruct.innerText = "20秒時間内，上排牙齒内側，每兩顆一起刷";
+                else if (timeLeft > 80) instruct.innerText = "20秒時間內，上排牙齒咬合面，每兩顆一起刷";
+                else if (timeLeft > 60) instruct.innerText = "20秒時間内，上排牙齒外側，每兩顆一起刷";
+                else if (timeLeft > 40) instruct.innerText = "20秒時間内，下排牙齒內側，每兩顆一起刷";
+                else if (timeLeft > 20) instruct.innerText = "20秒時間內，下排牙齒咬合面，每兩顆一起刷";
+                else if (timeLeft > 0) instruct.innerText = "20秒時間內，下排牙齒外側，每兩顆一起刷";
                 else instruct.innerText = "Don't forget your tongue!";
 
                 if (timeLeft <= 0) {
