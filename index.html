@@ -796,7 +796,8 @@
             { q: "Which drink is best for teeth?", a: ["Soda", "Water", "Energy drinks"], correct: 1 },
             { q: "How many times a day should you brush?", a: ["1", "2", "5"], correct: 1 }
         ];
-
+        const DAILY_QUIZ_LIMIT = 10;
+        
         window.startQuiz = function() {
             closeModal('interact-modal');
 
@@ -806,16 +807,16 @@
                 saveData();
             }
 
-            if (userData.quizHistory.answered.length >= 3) {
-                alert("🧠 You've completed your 3 daily quizzes!\nCome back tomorrow for more.");
-                return;
-            }
+        if (userData.quizHistory.answered.length >= DAILY_QUIZ_LIMIT) {
+            alert(`🧠 You've completed your ${DAILY_QUIZ_LIMIT} daily quizzes!\nCome back tomorrow for more.`);
+            return;
+        }
 
             loadNextQuestion();
         };
 
         function loadNextQuestion() {
-            if (userData.quizHistory.answered.length >= 3) {
+            if (userData.quizHistory.answered.length >= DAILY_QUIZ_LIMIT) {
                 closeModal('quiz-modal');
                 alert("🎉 Daily Quizzes Completed!");
                 return;
@@ -837,7 +838,7 @@
             modal.style.display = 'block';
             
             const count = userData.quizHistory.answered.length + 1;
-            document.getElementById('quiz-header').innerText = `Daily Question ${count}/3`;
+            document.getElementById('quiz-header').innerText = `Daily Question ${count}/${DAILY_QUIZ_LIMIT}`;
             document.getElementById('quiz-question').innerText = q.q;
             
             const opts = document.getElementById('quiz-options');
@@ -860,7 +861,7 @@
                     saveData();
                     updateUI();
                     
-                    if (userData.quizHistory.answered.length < 3) {
+                    if (userData.quizHistory.answered.length < DAILY_QUIZ_LIMIT) {
                         loadNextQuestion();
                     } else {
                         closeModal('quiz-modal');
