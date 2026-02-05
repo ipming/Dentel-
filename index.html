@@ -553,11 +553,22 @@
             ctx.drawImage(images.shop, shopDoor.x, shopDoor.y, shopDoor.w, shopDoor.h);
             
             const flagFrame = Math.floor(Date.now() / 400) % 2; 
-            flagLinks.forEach(f => {
+            flagLinks.forEach((f, idx) => {
                 const suffix = (flagFrame === 0) ? 'a' : 'b';
                 const key = `flag_${f.color}_${suffix}`;
                 if(images[key]) {
                     ctx.drawImage(images[key], f.x, f.y, 40, 40); 
+                    // Add label below the flag
+                    ctx.font = "bold 16px Arial";
+                    ctx.textAlign = "center";
+                    ctx.fillStyle = "#fff";
+                    ctx.strokeStyle = "#222";
+                    ctx.lineWidth = 3;
+                    const label = `Dental Tips${idx + 1}`;
+                    // Draw stroke for contrast (optional)
+                    ctx.strokeText(label, f.x + 20, f.y + 60); 
+                    // Draw label text
+                    ctx.fillText(label, f.x + 20, f.y + 60); 
                 }
             });
 
