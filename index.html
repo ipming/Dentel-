@@ -460,6 +460,7 @@
             const pCenterY = player.y + player.h/2;
             let foundFlag = null;
 
+        
             flagLinks.forEach(f => {
                 // Flag center approx (f.x+20, f.y+20)
                 const fCenterX = f.x + 20;
@@ -552,15 +553,28 @@
             drawFence();
             ctx.drawImage(images.shop, shopDoor.x, shopDoor.y, shopDoor.w, shopDoor.h);
             
-            const flagFrame = Math.floor(Date.now() / 400) % 2; 
-            flagLinks.forEach(f => {
+            const flagFrame = Math.floor(Date.now() / 400) % 2;          
+            flagLinks.forEach((f, index) => {
                 const suffix = (flagFrame === 0) ? 'a' : 'b';
                 const key = `flag_${f.color}_${suffix}`;
                 if(images[key]) {
-                    ctx.drawImage(images[key], f.x, f.y, 40, 40); 
+                    ctx.drawImage(images[key], f.x, f.y, 40, 40);
+            
+                    // Draw the label under the flag
+                    ctx.font = "bold 16px Arial";
+                    ctx.textAlign = "center";
+                    ctx.fillStyle = "white";
+                    ctx.strokeStyle = "black";
+                    ctx.lineWidth = 3;
+            
+                    const label = `Dental Care Tips ${index + 1}`;
+                    const labelX = f.x + 20; // Centered under the flag
+                    const labelY = f.y + 55; // Below the flag
+            
+                    ctx.strokeText(label, labelX, labelY); // Black outline
+                    ctx.fillText(label, labelX, labelY);   // White label
                 }
             });
-
             grasses.forEach(g => {
                 let img = images['grass' + g.type];
                 ctx.drawImage(img, g.x, g.y, 32, 32);
