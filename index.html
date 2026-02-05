@@ -551,7 +551,15 @@
 
             drawFence();
             ctx.drawImage(images.shop, shopDoor.x, shopDoor.y, shopDoor.w, shopDoor.h);
-            
+            // Draw "Shop" label below shop door
+            ctx.font = "bold 20px Arial";    // Use original or adjust if needed
+            ctx.textAlign = "center";
+            ctx.strokeStyle = "black";
+            ctx.lineWidth = 4;
+            ctx.strokeText("Shop", shopDoor.x + shopDoor.w / 2, shopDoor.y + shopDoor.h + 28); // 28 px below bottom of door for spacing
+            ctx.fillStyle = "white";
+            ctx.fillText("Shop", shopDoor.x + shopDoor.w / 2, shopDoor.y + shopDoor.h + 28);
+          
             const flagFrame = Math.floor(Date.now() / 400) % 2; 
             flagLinks.forEach((f, idx) => {
                 const suffix = (flagFrame === 0) ? 'a' : 'b';
