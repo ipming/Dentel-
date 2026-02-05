@@ -540,7 +540,7 @@
 
             particles.forEach((p, i) => {
                 p.life--;
-                p.y -= 1;
+                p.y -= 0.6;
                 if(p.life <= 0) particles.splice(i, 1);
             });
 
