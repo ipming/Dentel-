@@ -829,7 +829,7 @@
                 saveData();
             }
 
-            if (userData.quizHistory.answered.length >= 3) {
+            if (userData.quizHistory.answered.length >= 10) {
                 alert("🧠 You've completed your 3 daily quizzes!\nCome back tomorrow for more.");
                 return;
             }
@@ -838,7 +838,7 @@
         };
 
         function loadNextQuestion() {
-            if (userData.quizHistory.answered.length >= 3) {
+            if (userData.quizHistory.answered.length >= 10) {
                 closeModal('quiz-modal');
                 alert("🎉 Daily Quizzes Completed!");
                 return;
@@ -860,7 +860,7 @@
             modal.style.display = 'block';
             
             const count = userData.quizHistory.answered.length + 1;
-            document.getElementById('quiz-header').innerText = `Daily Question ${count}/3`;
+            document.getElementById('quiz-header').innerText = `Daily Question ${count}/10`;
             document.getElementById('quiz-question').innerText = q.q;
             
             const opts = document.getElementById('quiz-options');
@@ -883,7 +883,7 @@
                     saveData();
                     updateUI();
                     
-                    if (userData.quizHistory.answered.length < 3) {
+                    if (userData.quizHistory.answered.length < 10) {
                         loadNextQuestion();
                     } else {
                         closeModal('quiz-modal');
