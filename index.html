@@ -547,11 +547,11 @@
             // --- Grass collision and coin gain/loss! ---
             const now = Date.now();
             grasses.forEach(grass => {
-                // Rectangle collision: player vs grass (32x32)
+                // Rectangle collision: player vs grass (24x24)
                 if (
-                    player.x < grass.x + 32 &&
+                    player.x < grass.x + 24 &&
                     player.x + player.w > grass.x &&
-                    player.y < grass.y + 32 &&
+                    player.y < grass.y + 24 &&
                     player.y + player.h > grass.y
                 ) {
                     // Only trigger if a minute (60,000 ms) has passed since last collision for this patch
@@ -666,7 +666,7 @@
 
             particles.forEach((p, i) => {
                 p.life--;
-                p.y -= 1; // float upward
+                p.y -= 0.6; // float upward
                 // ... existing code for other effects...
             
                 if (p.type === "dot") {
