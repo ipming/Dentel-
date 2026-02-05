@@ -386,7 +386,8 @@
                 grasses.push({
                     x: Math.random() * width,
                     y: Math.random() * height,
-                    type: Math.floor(Math.random() * 3) + 1 
+                    type: Math.floor(Math.random() * 3) + 1,
+                    lastCollected: 0        // New field to track last trigger time
                 });
             }
         }
@@ -542,6 +543,35 @@
                 p.y -= 1;
                 if(p.life <= 0) particles.splice(i, 1);
             });
+
+            // --- Grass collision and coin gain/loss! ---
+            const now = Date.now();
+            grasses.forEach(grass => {
+                // Rectangle collision: player vs grass (32x32)
+                if (
+                    player.x < grass.x + 32 &&
+                    player.x + player.w > grass.x &&
+                    player.y < grass.y + 32 &&
+                    player.y + player.h > grass.y
+                ) {
+                    // Only trigger if a minute (60,000 ms) has passed since last collision for this patch
+                    if (now - grass.lastCollected > 60000) {
+                        if (grass.type === 1 || grass.type === 2) {
+                            userData.coins += 5;
+                            updateUI();
+                            // Optionally, you can show a subtle "+5" effect here
+                        } else if (grass.type === 3) {
+                            userData.coins = Math.max(0, userData.coins - 5); // Don't go negative!
+                            updateUI();
+                            // Optionally, show a "-5" effect
+                        }
+                        grass.lastCollected = now;
+                        saveData();
+                    }
+                }
+            });
+
+            
         }
 
         function draw() {
