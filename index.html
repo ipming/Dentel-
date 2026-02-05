@@ -382,11 +382,12 @@
 
         function initGrass() {
             grasses.length = 0;
-            for(let i=0; i<30; i++) {
+            for (let i = 0; i < 30; i++) {
                 grasses.push({
                     x: Math.random() * width,
                     y: Math.random() * height,
-                    type: Math.floor(Math.random() * 3) + 1 
+                    type: Math.floor(Math.random() * 3) + 1,  // 1, 2, or 3
+                    lastActivated: 0    // Time in ms; 0 means never activated
                 });
             }
         }
@@ -626,6 +627,41 @@
                 }
                 ctx.globalAlpha = 1.0;
             });
+
+            const now = Date.now();
+            grasses.forEach((g, idx) => {
+                // Simple collision: check if player rectangle overlaps center of grass
+                const gx = g.x + 16, gy = g.y + 16;
+                const px = player.x + player.w / 2, py = player.y + player.h / 2;
+                const dist = Math.hypot(px - gx, py - gy);
+            
+                if (dist < 32) { // Within 32 px (grass tile size)
+                    // 60 seconds = 60,000 ms cooldown
+                    if (now - g.lastActivated > 60000) {
+                        if (g.type === 1 || g.type === 2) {
+                            userData.coins += 1;
+            
+                            // Optionally: temporary particle/visual feedback
+                            particles.push({ x: gx, y: gy, life: 20, color: "gold" });
+            
+                            g.lastActivated = now;
+                            saveData();
+                            updateUI();
+                        } else if (g.type === 3) {
+                            userData.coins = Math.max(0, userData.coins - 1);
+            
+                            // Optionally: temporary negative feedback
+                            particles.push({ x: gx, y: gy, life: 20, color: "red" });
+            
+                            g.lastActivated = now;
+                            saveData();
+                            updateUI();
+                        }
+                    }
+                }
+            });
+
+           
         }
 
         function drawFence() {
