@@ -561,7 +561,7 @@
             ctx.lineWidth = 3;
             
             const shopLabelX = shopDoor.x + shopDoor.w / 2;
-            const shopLabelY = shopDoor.y - 10; // 10px above the shop door
+            const shopLabelY = shopDoor.y + 20; //  below the shop door
             
             ctx.strokeText("Shop", shopLabelX, shopLabelY);
             ctx.fillText("Shop", shopLabelX, shopLabelY);
